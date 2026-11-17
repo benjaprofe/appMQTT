@@ -42,7 +42,8 @@
 
         <!-- Indicador de Sistema Conectado -->
         <div class="flex items-center gap-3">
-          <div id="connection-badge" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-semibold transition-all">
+          <div id="connection-badge"
+            class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-semibold transition-all">
             <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
             <span id="status-label">⏳ Conectando...</span>
           </div>
@@ -647,7 +648,7 @@
         });
 
         client.on("close", () => {
-          if ( client && !client.connected ) {
+          if (client && !client.connected) {
             setStatus("connecting", "🔄 Reconectando...");
           }
         });
