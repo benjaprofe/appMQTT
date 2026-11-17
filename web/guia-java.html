@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guía Práctica Android (Java) · MQTT EMQX</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Barra de Navegación entre Páginas -->
+  <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-xl">
+          🤖
+        </div>
+        <div>
+          <span class="text-xs font-bold uppercase tracking-widest text-emerald-400 block">Documentación Android Studio · Java</span>
+          <h1 class="text-lg sm:text-xl font-bold text-white">Guía Práctica MQTT en Android (Java)</h1>
+        </div>
+      </div>
+
+      <nav class="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold">
+        <a href="index.html" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          🏠 Volver al Panel y Monitor
+        </a>
+        <a href="guia-java.html" class="px-3.5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold transition">
+          🤖 Guía Android (Java)
+        </a>
+        <a href="guia-html.html" class="px-3.5 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 transition">
+          🌐 Ir a Guía Web (HTML + JS) →
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+    <!-- Resumen de Parámetros de Conexión en Android -->
+    <section class="bg-slate-900/80 border border-emerald-500/30 rounded-2xl p-6 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Configuración del Cliente Móvil</span>
+          <h2 class="text-2xl font-extrabold text-white mt-1">Conexión de Android Studio con EMQX Cloud</h2>
+          <p class="text-sm text-slate-400 mt-1 max-w-2xl">
+            En Android nativo utilizamos la librería <code class="text-emerald-300">MqttAndroidClient</code> sobre TCP/TLS en el puerto <code class="text-emerald-300">8883</code> (con respaldo WebSocket en <code class="text-emerald-300">8084</code>).
+          </p>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono space-y-1">
+          <div><span class="text-slate-400">Broker URL:</span> <span class="text-emerald-400">ssl://h0bc12ce.ala.us-east-1.emqxsl.com:8883</span></div>
+          <div><span class="text-slate-400">Client ID:</span> <span class="text-amber-300">android-device</span></div>
+          <div><span class="text-slate-400">Usuario:</span> <span class="text-white">android-username</span></div>
+          <div><span class="text-slate-400">Contraseña:</span> <span class="text-white">android-username</span></div>
+          <div><span class="text-slate-400">Tópico Raíz:</span> <span class="text-sky-400">hogar/#</span></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5 text-xs">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+          <div class="font-bold text-emerald-400 text-sm mb-1">1. Protocolo SSL/TLS (:8883)</div>
+          <p class="text-slate-300 leading-relaxed">
+            A diferencia del navegador web, Android puede abrir sockets TCP directos con cifrado SSL usando el prefijo <code class="text-emerald-300">ssl://</code> en el puerto <code class="text-emerald-300">8883</code>.
+          </p>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+          <div class="font-bold text-emerald-400 text-sm mb-1">2. Client ID Exclusivo</div>
+          <p class="text-slate-300 leading-relaxed">
+            La app Android se identifica como <code class="text-amber-300">"android-device"</code>, mientras que la web usa <code class="text-sky-300">"android-device-web"</code>. Así ambas permanecen conectadas sin desconectarse entre sí.
+          </p>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+          <div class="font-bold text-emerald-400 text-sm mb-1">3. Hilo Principal (UI Thread)</div>
+          <p class="text-slate-300 leading-relaxed">
+            Los eventos de MQTT llegan en un hilo en segundo plano. Por eso en Java usamos <code class="text-emerald-300">runOnUiThread(() -&gt; ...)</code> para actualizar textos y mostrar <em>Toasts</em>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso a Paso de Configuración en Android -->
+    <section class="space-y-6">
+      <h2 class="text-xl font-bold text-white">🛠️ Paso a Paso: Configuración del Proyecto en Android</h2>
+
+      <!-- Paso 1 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-emerald-400">Paso 1: Agregar la librería MQTT en <code class="text-white">app/build.gradle</code></h3>
+          <span class="text-xs font-mono text-slate-400">Gradle</span>
+        </div>
+        <p class="text-sm text-slate-300">
+          En el archivo <code class="text-emerald-300">app/build.gradle</code> se declara la dependencia de Paho MQTT compatible con versiones modernas de Android (SDK 24 a 36):
+        </p>
+        <pre class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 overflow-x-auto"><code>dependencies {
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.activity
+    implementation libs.constraintlayout
+
+    // Cliente MQTT para Android (fork actualizado de Eclipse Paho)
+    implementation 'com.github.hannesa2:paho.mqtt.android:3.3.5'
+}</code></pre>
+      </div>
+
+      <!-- Paso 2 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-emerald-400">Paso 2: Declarar Permisos y Servicio en <code class="text-white">AndroidManifest.xml</code></h3>
+          <span class="text-xs font-mono text-slate-400">Manifest</span>
+        </div>
+        <p class="text-sm text-slate-300">
+          Para que Android permita abrir la conexión a Internet y mantener vivo el servicio MQTT en segundo plano, es obligatorio registrar los permisos y el <code class="text-amber-300">&lt;service android:name="info.mqtt.android.service.MqttService" /&gt;</code>:
+        </p>
+        <pre class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 overflow-x-auto"><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+
+    &lt;!-- 1. Permisos requeridos por MQTT --&gt;
+    &lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+    &lt;uses-permission android:name="android.permission.WAKE_LOCK" /&gt;
+    &lt;uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /&gt;
+
+    &lt;application ... &gt;
+        &lt;!-- 2. Servicio en segundo plano que gestiona la conexión MQTT --&gt;
+        &lt;service android:name="info.mqtt.android.service.MqttService" /&gt;
+
+        &lt;activity android:name=".MainActivity" android:exported="true"&gt;
+            ...
+        &lt;/activity&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre>
+      </div>
+
+      <!-- Paso 3 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-emerald-400">Paso 3: Inicializar y Conectar al Broker en <code class="text-white">MainActivity.java</code></h3>
+          <span class="text-xs font-mono text-slate-400">Conexión Java</span>
+        </div>
+        <p class="text-sm text-slate-300">
+          Definimos las constantes de conexión, creamos la instancia de <code class="text-white">MqttAndroidClient</code> en <code class="text-white">onCreate()</code> y configuramos <code class="text-white">MqttConnectOptions</code> con usuario, contraseña y reconexión automática:
+        </p>
+        <pre class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 overflow-x-auto"><code>public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "MainActivity";
+    // URL principal por SSL (puerto 8883) y alternativa por WSS (puerto 8084)
+    private static final String MQTT_BROKER_URL = "ssl://h0bc12ce.ala.us-east-1.emqxsl.com:8883";
+    private static final String[] FALLBACK_URIS = new String[] {
+            "ssl://h0bc12ce.ala.us-east-1.emqxsl.com:8883",
+            "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt"
+    };
+    private static final String CLIENT_ID = "android-device";
+    private static final String MQTT_USERNAME = "android-username";
+    private static final String MQTT_PASSWORD = "android-username";
+
+    private MqttAndroidClient client;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // Crear el cliente con confirmación automática de mensajes (Ack.AUTO_ACK)
+        client = new MqttAndroidClient(
+            getApplicationContext(),
+            MQTT_BROKER_URL,
+            CLIENT_ID,
+            Ack.AUTO_ACK
+        );
+
+        connectToMqttBroker();
+    }
+
+    private void connectToMqttBroker() {
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setServerURIs(FALLBACK_URIS);
+        options.setUserName(MQTT_USERNAME);
+        options.setPassword(MQTT_PASSWORD.toCharArray());
+        options.setAutomaticReconnect(true); // Reconectar si cambia el Wi-Fi o datos móviles
+        options.setCleanSession(true);
+
+        client.connect(options, null, new IMqttActionListener() {
+            @Override
+            public void onSuccess(IMqttToken asyncActionToken) {
+                Log.d(TAG, "¡Conectado exitosamente a EMQX!");
+            }
+
+            @Override
+            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                Log.e(TAG, "Error al conectar", exception);
+            }
+        });
+    }
+}</code></pre>
+      </div>
+    </section>
+
+    <!-- Sección Crucial: Cómo el Usuario ENVÍA y RECIBE Información en Java -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- 📤 CÓMO ENVIAR INFORMACIÓN EN JAVA (PUBLISH) -->
+      <div class="bg-slate-900/90 border border-emerald-500/40 rounded-2xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Flujo de Salida en Android</span>
+            <h3 class="text-xl font-bold text-white mt-0.5">📤 Cómo el usuario ENVÍA información (Publish)</h3>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            client.publish()
+          </span>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Cuando el usuario presiona un botón en la pantalla del teléfono (por ejemplo, <strong>Encender Luz</strong> o <strong>Establecer Temperatura</strong> en el <code class="text-white">SeekBar</code>), la aplicación empaqueta el texto en un objeto <code class="text-emerald-300">MqttMessage</code> y lo publica en el tópico correspondiente.
+        </p>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-300">1. Asignar los botones en Java (<code class="text-white">setupButtons</code>):</h4>
+          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>// Botones de encendido y apagado de la luz del living
+findViewById(R.id.btnLivingLuzOn).setOnClickListener(v -&gt;
+    publishWithConfirmation("hogar/living/luz/set", "on", "Luz encendida")
+);
+
+findViewById(R.id.btnLivingLuzOff).setOnClickListener(v -&gt;
+    publishWithConfirmation("hogar/living/luz/set", "off", "Luz apagada")
+);
+
+// Enviar el valor numérico del SeekBar del Termostato
+findViewById(R.id.btnSetTemp).setOnClickListener(v -&gt; {
+    String temp = String.valueOf(tempSlider.getProgress());
+    publishWithConfirmation("hogar/clima/temperatura/set", temp, "Temp: " + temp + "°C");
+});</code></pre>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-300">2. Método que envía el mensaje al Broker (<code class="text-white">publishWithConfirmation</code>):</h4>
+          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>private void publishWithConfirmation(String topic, String payload, String msg) {
+    // 1. Mostrar en el visor local y confirmar con un Toast
+    appendToSubscriptionLog(topic, payload);
+    Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+
+    try {
+        // 2. Convertir el String (ej. "on") a arreglo de bytes
+        MqttMessage message = new MqttMessage(payload.getBytes());
+        message.setQos(1); // QoS 1: Entrega garantizada al menos una vez
+
+        // 3. Publicar de forma asíncrona en el tópico (ej. "hogar/living/luz/set")
+        client.publish(topic, message, null, new IMqttActionListener() {
+            @Override
+            public void onSuccess(IMqttToken asyncActionToken) {
+                Log.d(TAG, "Publicado: " + topic + " = " + payload);
+            }
+
+            @Override
+            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                Log.e(TAG, "Error al publicar en " + topic, exception);
+            }
+        });
+    } catch (Exception e) {
+        Log.e(TAG, "Error al crear el mensaje MQTT", e);
+    }
+}</code></pre>
+        </div>
+      </div>
+
+      <!-- 📥 CÓMO RECIBIR INFORMACIÓN EN JAVA (SUBSCRIBE) -->
+      <div class="bg-slate-900/90 border border-sky-500/40 rounded-2xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Flujo de Entrada en Android</span>
+            <h3 class="text-xl font-bold text-white mt-0.5">📥 Cómo el usuario RECIBE información (Subscribe)</h3>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">
+            messageArrived()
+          </span>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Para que el teléfono reciba en tiempo real cualquier cambio hecho desde la Página Web o desde otro dispositivo, primero se <strong>suscribe</strong> al comodín <code class="text-amber-300">hogar/#</code> y luego escucha el callback <code class="text-sky-300">messageArrived</code>.
+        </p>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-sky-300">1. Suscribirse al tópico <code class="text-white">hogar/#</code> al conectar:</h4>
+          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>private void subscribeToTopics() {
+    // El comodín "#" recibe todos los subtópicos que empiecen con "hogar/"
+    client.subscribe("hogar/#", 1, null, new IMqttActionListener() {
+        @Override
+        public void onSuccess(IMqttToken asyncActionToken) {
+            Log.d(TAG, "¡Suscrito exitosamente a 'hogar/#'!");
+        }
+
+        @Override
+        public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+            Log.e(TAG, "Error al suscribir", exception);
+        }
+    });
+}</code></pre>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-sky-300">2. Recibir el mensaje y mostrarlo en el Visor de la App:</h4>
+          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>client.setCallback(new MqttCallbackExtended() {
+    @Override
+    public void connectComplete(boolean reconnect, String serverURI) {
+        // Apenas termina de conectar, activamos la suscripción
+        subscribeToTopics();
+    }
+
+    @Override
+    public void messageArrived(String topic, MqttMessage message) throws Exception {
+        // 1. Extraer el contenido recibido en texto plano
+        String payload = new String(message.getPayload());
+
+        // 2. Pasar al hilo visual (UI Thread) para actualizar el TextView del Visor
+        runOnUiThread(() -&gt; {
+            String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                              .format(new Date());
+            String entry = "[" + time + "] " + topic + " → " + payload + "\n";
+
+            // Insertar al principio del historial y mostrar en pantalla
+            logBuilder.insert(0, entry);
+            subscriptionLogTextView.setText(logBuilder.toString().trim());
+
+            Toast.makeText(MainActivity.this, "Recibido: " + payload, Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    @Override
+    public void connectionLost(Throwable cause) { }
+    @Override
+    public void deliveryComplete(IMqttDeliveryToken token) { }
+});</code></pre>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</body>
+</html>

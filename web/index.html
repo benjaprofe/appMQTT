@@ -27,16 +27,19 @@
           </div>
         </div>
 
-        <!-- Selector de Vistas (Paralelo / Página Control / Página Monitor) -->
-        <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm font-semibold">
+        <!-- Selector de Vistas (Paralelo / Página Control / Página Monitor / Guía Práctica) -->
+        <div class="flex flex-wrap items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm font-semibold">
           <button type="button" data-view="split" class="view-tab px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 transition">
-            ⚡ Vista Paralela (Ambas)
+            ⚡ Vista Paralela
           </button>
           <button type="button" data-view="control" class="view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
             🎛️ Página 1: Control
           </button>
           <button type="button" data-view="monitor" class="view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
             🖥️ Página 2: Monitor
+          </button>
+          <button type="button" data-view="guide" class="view-tab px-3 py-1.5 rounded-lg text-amber-300 hover:text-white transition">
+            📘 Guía Práctica (Android + Web)
           </button>
         </div>
 
@@ -338,6 +341,906 @@
 
     </main>
 
+    <!-- =========================================================================
+         GUÍA PRÁCTICA PASO A PASO: CONEXIÓN MQTT EN ANDROID Y EN LA WEB
+         ========================================================================= -->
+    <section id="page-guide" class="max-w-7xl mx-auto px-4 sm:px-6 pb-16 pt-2">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-8">
+
+        <!-- Encabezado de la Guía -->
+        <div class="border-b border-slate-800 pb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-widest text-amber-400 block">Documentación Técnica Paso a Paso</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">📘 Guía Práctica: Cómo Conectar Android y la Web con MQTT (EMQX Cloud)</h2>
+            <p class="text-slate-400 text-sm mt-2 max-w-3xl">
+              Explicación detallada línea por línea de la arquitectura, puertos, permisos, código de Android (<code class="text-emerald-300">MainActivity.java</code>) y código Web (<code class="text-sky-300">MQTT.js</code>) para que ambos sistemas funcionen en paralelo sin desconectarse.
+            </p>
+          </div>
+          <div class="flex flex-col gap-1.5 bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs font-mono">
+            <div class="text-slate-400">Host EMQX: <span class="text-white">h0bc12ce.ala.us-east-1.emqxsl.com</span></div>
+            <div class="text-emerald-400">Puerto Android (TLS): <span>8883 (ssl://)</span></div>
+            <div class="text-sky-400">Puerto Web (WSS): <span>8084 (wss://.../mqtt)</span></div>
+            <div class="text-amber-300">Tópico Raíz: <span>hogar/#</span></div>
+          </div>
+        </div>
+
+        <!-- 1. Arquitectura y Regla de Oro (Client IDs y Puertos) -->
+        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-5 space-y-4">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>🔑</span> 1. Reglas Clave en EMQX Cloud: ¿Por qué fallaba antes y cómo funciona ahora?
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl">
+              <div class="font-bold text-emerald-400 mb-1">A. Diferencia de Puertos (8883 vs 8084)</div>
+              <p class="text-slate-300 text-xs leading-relaxed">
+                Los navegadores web <strong>no pueden</strong> abrir sockets TCP puros por seguridad; obligatoriamente requieren <strong>WebSockets sobre TLS (<code class="text-sky-300">wss://</code>)</strong> en el puerto <code class="text-sky-300">8084</code>. En cambio, Android nativo usa TCP con SSL (<code class="text-emerald-300">ssl://</code>) en el puerto <code class="text-emerald-300">8883</code> (aunque también soporta 8084). El puerto <code class="text-rose-400">8884</code> está cerrado o reservado para certificados de cliente mutuos, por eso daba <code class="text-rose-400">connack timeout</code>.
+              </p>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl">
+              <div class="font-bold text-sky-400 mb-1">B. Client ID Único por Dispositivo</div>
+              <p class="text-slate-300 text-xs leading-relaxed">
+                En el estándar MQTT, <strong>dos clientes no pueden usar el mismo <code class="text-amber-300">CLIENT_ID</code> al mismo tiempo</strong>. Si Android y la Web se conectan como <code class="text-amber-300">android-device</code>, el broker desconecta inmediatamente al anterior.
+                <br><br>
+                ✅ <strong>Solución:</strong> Android usa <code class="text-emerald-300">"android-device"</code> y la Web usa <code class="text-sky-300">"android-device-web"</code>.
+              </p>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl">
+              <div class="font-bold text-amber-400 mb-1">C. Autorización en EMQX Cloud</div>
+              <p class="text-slate-300 text-xs leading-relaxed">
+                En el panel de EMQX Cloud (<em>Access Control → Authentication / Authorization</em>):
+                <br>• Usuario: <code class="text-white">android-username</code>
+                <br>• Contraseña: <code class="text-white">android-username</code>
+                <br>• Permisos ACL: Permitir <strong>Publish & Subscribe</strong> al tópico <code class="text-amber-300">hogar/#</code> tanto para <code class="text-emerald-300">android-device</code> como para <code class="text-sky-300">android-device-web</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columnas Paralelas de Explicación: Android vs Web -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+          <!-- ==========================================
+               COLUMNA IZQUIERDA: GUÍA ANDROID
+               ========================================== -->
+          <div class="bg-slate-950 border border-emerald-500/30 rounded-2xl p-5 sm:p-6 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Parte 1 · Aplicación Móvil</span>
+                <h3 class="text-xl font-bold text-white mt-0.5">🤖 Cómo Conectar en Android (Java)</h3>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-xs font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                Paho MQTT Android
+              </span>
+            </div>
+
+            <!-- Paso 1 Android: build.gradle -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-emerald-300">Paso 1: Agregar dependencia en <code class="text-white">app/build.gradle</code></h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Se utiliza el fork mantenido <code class="text-emerald-300">hannesa2:paho.mqtt.android</code> compatible con Android 12+ (API 31 a 36).
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>dependencies {
+    // Librería cliente MQTT para Android
+    implementation 'com.github.hannesa2:paho.mqtt.android:3.3.5'
+}</code></pre>
+            </div>
+
+            <!-- Paso 2 Android: AndroidManifest.xml -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-emerald-300">Paso 2: Permisos y Servicio en <code class="text-white">AndroidManifest.xml</code></h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                MQTT corre en un servicio en segundo plano (<code class="text-emerald-300">MqttService</code>). Si no se declara <code class="text-amber-300">info.mqtt.android.service.MqttService</code> dentro de <code class="text-white">&lt;application&gt;</code>, la app nunca se conectará.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>&lt;!-- Permisos necesarios para red y mantener viva la conexión --&gt;
+&lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+&lt;uses-permission android:name="android.permission.WAKE_LOCK" /&gt;
+&lt;uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /&gt;
+
+&lt;application ...&gt;
+    &lt;!-- OBLIGATORIO: Servicio en segundo plano de la librería MQTT --&gt;
+    &lt;service android:name="info.mqtt.android.service.MqttService" /&gt;
+&lt;/application&gt;</code></pre>
+            </div>
+
+            <!-- Paso 3 Android: Constantes y Cliente -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-emerald-300">Paso 3: Configurar Credenciales y Cliente en <code class="text-white">MainActivity.java</code></h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Definimos la URL con <code class="text-emerald-300">ssl://...:8883</code> (TLS nativo) y <code class="text-emerald-300">wss://...:8084/mqtt</code> como respaldo. Luego instanciamos <code class="text-white">MqttAndroidClient</code> con <code class="text-white">Ack.AUTO_ACK</code> para confirmar automáticamente los mensajes recibidos.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>private static final String MQTT_BROKER_URL =
+    "ssl://h0bc12ce.ala.us-east-1.emqxsl.com:8883";
+private static final String CLIENT_ID = "android-device";
+private static final String MQTT_USERNAME = "android-username";
+private static final String MQTT_PASSWORD = "android-username";
+
+// En onCreate():
+client = new MqttAndroidClient(
+    getApplicationContext(),
+    MQTT_BROKER_URL,
+    CLIENT_ID,
+    Ack.AUTO_ACK
+);</code></pre>
+            </div>
+
+            <!-- Paso 4 Android: Conexión y Callbacks -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-emerald-300">Paso 4: Conectar al Broker y Escuchar Mensajes (<code class="text-white">MqttCallbackExtended</code>)</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Usamos <code class="text-white">MqttConnectOptions</code> para enviar usuario, contraseña, reconexión automática y sesión limpia. Cuando <code class="text-emerald-300">connectComplete</code> se dispara, nos suscribimos a <code class="text-amber-300">hogar/#</code>. Cada vez que llega un mensaje a cualquier subtópico de <code class="text-amber-300">hogar/#</code>, se ejecuta <code class="text-emerald-300">messageArrived</code>.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>client.setCallback(new MqttCallbackExtended() {
+    @Override
+    public void connectComplete(boolean reconnect, String serverURI) {
+        // Al conectar o reconectar, nos suscribimos a todos los tópicos del hogar
+        subscribeToTopics();
+    }
+
+    @Override
+    public void messageArrived(String topic, MqttMessage message) {
+        String payload = new String(message.getPayload());
+        // Importante: actualizar la interfaz dentro de runOnUiThread()
+        runOnUiThread(() -&gt; {
+            appendToSubscriptionLog(topic, payload);
+        });
+    }
+
+    @Override
+    public void connectionLost(Throwable cause) { }
+    @Override
+    public void deliveryComplete(IMqttDeliveryToken token) { }
+});
+
+MqttConnectOptions options = new MqttConnectOptions();
+options.setUserName(MQTT_USERNAME);
+options.setPassword(MQTT_PASSWORD.toCharArray());
+options.setAutomaticReconnect(true);
+options.setCleanSession(true);
+
+client.connect(options, null, new IMqttActionListener() {
+    @Override
+    public void onSuccess(IMqttToken asyncActionToken) {
+        // Conexión exitosa
+    }
+    @Override
+    public void onFailure(IMqttToken token, Throwable exception) {
+        // Manejo de error
+    }
+});</code></pre>
+            </div>
+
+            <!-- Paso 5 Android: Suscribir y Publicar -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-emerald-300">Paso 5: Suscribirse (<code class="text-white">subscribe</code>) y Publicar (<code class="text-white">publish</code>)</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                El comodín <code class="text-amber-300">#</code> en <code class="text-amber-300">hogar/#</code> escucha todos los niveles (<code class="text-sky-300">hogar/living/luz/set</code>, <code class="text-sky-300">hogar/alarma/set</code>, etc.) con calidad de servicio <code class="text-white">QoS 1</code> (entrega garantizada al menos una vez).
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>// 1. SUSCRIBIRSE AL TÓPICO RAÍZ
+client.subscribe("hogar/#", 1, null, new IMqttActionListener() { ... });
+
+// 2. PUBLICAR UN COMANDO (ej. encender luz)
+MqttMessage message = new MqttMessage("on".getBytes());
+message.setQos(1);
+client.publish("hogar/living/luz/set", message, null, new IMqttActionListener() { ... });</code></pre>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               COLUMNA DERECHA: GUÍA WEB (HTML + JS)
+               ========================================== -->
+          <div class="bg-slate-950 border border-sky-500/30 rounded-2xl p-5 sm:p-6 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Parte 2 · Navegador Web</span>
+                <h3 class="text-xl font-bold text-white mt-0.5">🌐 Cómo Conectar en la Web (HTML + MQTT.js)</h3>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-xs font-mono bg-sky-500/10 text-sky-300 border border-sky-500/30">
+                MQTT.js + Tailwind CSS
+              </span>
+            </div>
+
+            <!-- Paso 1 Web: Librerías CDN -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-sky-300">Paso 1: Importar Tailwind CSS y MQTT.js en el <code class="text-white">&lt;head&gt;</code></h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                En el archivo <code class="text-white">index.html</code> cargamos Tailwind CSS para el diseño responsivo en paralelo y el bundle oficial de <code class="text-sky-300">mqtt.min.js</code> que expone el objeto global <code class="text-white">mqtt</code> en el navegador.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>&lt;!-- Tailwind CSS para diseño de las 2 páginas en paralelo --&gt;
+&lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;
+
+&lt;!-- Cliente MQTT para navegadores (WebSockets) --&gt;
+&lt;script src="https://unpkg.com/mqtt/dist/mqtt.min.js"&gt;&lt;/script&gt;
+
+&lt;!-- Archivo local de credenciales --&gt;
+&lt;script src="config.local.js"&gt;&lt;/script&gt;</code></pre>
+            </div>
+
+            <!-- Paso 2 Web: config.local.js -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-sky-300">Paso 2: Configurar Puerto <code class="text-white">8084</code> y Client ID en <code class="text-white">config.local.js</code></h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                En EMQX Cloud, las conexiones WebSocket con TLS (<code class="text-sky-300">wss://</code>) usan el puerto <code class="text-sky-300">8084</code> y el path <code class="text-sky-300">/mqtt</code>. Además asignamos <code class="text-amber-300">android-device-web</code> para no colisionar con el <code class="text-emerald-300">android-device</code> del teléfono.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>window.MQTT_CONFIG = {
+  brokerUrl: "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt",
+  clientId: "android-device-web",
+  username: "android-username",
+  password: "android-username",
+  topic: "hogar/#"
+};</code></pre>
+            </div>
+
+            <!-- Paso 3 Web: mqtt.connect() -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-sky-300">Paso 3: Iniciar la Conexión WebSocket (<code class="text-white">mqtt.connect</code>)</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Llamamos a <code class="text-sky-300">mqtt.connect(brokerUrl, options)</code>. La librería abre un túnel WebSocket seguro y realiza el handshake MQTT enviando las credenciales.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>const client = mqtt.connect(
+  "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt",
+  {
+    clientId: "android-device-web",
+    username: "android-username",
+    password: "android-username",
+    clean: true,           // Sesión limpia al conectar
+    connectTimeout: 8000,  // Tiempo máximo de espera (8 seg)
+    reconnectPeriod: 4000  // Reintento automático cada 4 seg
+  }
+);</code></pre>
+            </div>
+
+            <!-- Paso 4 Web: Eventos connect y message -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-sky-300">Paso 4: Suscribirse y Actualizar el Monitor en Tiempo Real</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Escuchamos el evento <code class="text-emerald-300">'connect'</code> para suscribirnos a <code class="text-amber-300">hogar/#</code>, y el evento <code class="text-sky-300">'message'</code> para recibir cada cambio enviado desde Android o desde el propio panel web.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>// 1. Cuando el broker acepta la conexión (CONNACK):
+client.on("connect", () =&gt; {
+  setStatus("connected", "✅ Conectado (android-device-web)");
+  // Suscripción con QoS 1 y nl: true (evita recibir eco duplicado propio)
+  client.subscribe("hogar/#", { qos: 1, nl: true });
+});
+
+// 2. Cuando llega un mensaje desde Android o desde otro cliente:
+client.on("message", (topic, payload) =&gt; {
+  const texto = payload.toString();
+  // Actualiza las tarjetas LED del Monitor y agrega la fila al Visor
+  showMessage(topic, texto);
+});</code></pre>
+            </div>
+
+            <!-- Paso 5 Web: Publicar desde los botones HTML -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-sky-300">Paso 5: Publicar Comandos desde el Panel de Control Web</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Cada botón del HTML tiene atributos <code class="text-amber-300">data-pub-topic</code> y <code class="text-amber-300">data-pub-payload</code>. Al hacer clic, se envía el mensaje al broker con <code class="text-white">client.publish()</code> y se actualiza la vista paralela del Monitor al instante.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>&lt;!-- Botón en HTML --&gt;
+&lt;button data-pub-topic="hogar/living/luz/set" data-pub-payload="on"&gt;
+  Encender
+&lt;/button&gt;
+
+// Función de publicación en JavaScript:
+function publishMessage(topic, payload) {
+  // 1. Actualiza el Monitor local inmediatamente
+  showMessage(topic, String(payload));
+
+  // 2. Publica en EMQX Cloud con QoS 1 y retain: true
+  if (client &amp;&amp; client.connected) {
+    client.publish(topic, String(payload), { qos: 1, retain: true });
+  }
+}</code></pre>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Nueva Sección: Cómo el Usuario Envía (Publish) y Recibe (Subscribe) Información -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+
+          <!-- 📤 CÓMO ENVIAR INFORMACIÓN (PUBLISH) -->
+          <div class="bg-slate-950/95 border border-emerald-500/40 rounded-2xl p-5 sm:p-6 flex flex-col justify-between gap-4">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Flujo de Salida · Emisor (Publish)</span>
+                  <h3 class="text-lg sm:text-xl font-bold text-white mt-0.5">📤 ¿Cómo el usuario ENVÍA información?</h3>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  PUBLISH
+                </span>
+              </div>
+
+              <p class="text-xs text-slate-300 leading-relaxed">
+                En MQTT, enviar información se llama <strong>Publicar (Publish)</strong>. El usuario envía un paquete con dos datos clave: el <strong>Tópico (Topic)</strong> (la dirección o canal, ej. <code class="text-sky-300">hogar/living/luz/set</code>) y el <strong>Payload (Mensaje)</strong> (el valor o comando, ej. <code class="text-emerald-300">on</code>).
+              </p>
+
+              <div class="space-y-2.5 text-xs">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                  <div class="font-bold text-emerald-400 mb-1">1️⃣ Desde la Página Web (Panel de Control):</div>
+                  <ul class="list-disc list-inside text-slate-300 space-y-1">
+                    <li><strong>Con los botones rápidos:</strong> Al pulsar <em>Encender</em>, <em>Abrir</em>, <em>Activar</em> o mover el <em>Termostato</em>, la web lee el tópico y el valor del botón y ejecuta <code class="text-emerald-300">client.publish(topic, payload)</code>.</li>
+                    <li><strong>Con el formulario personalizado:</strong> En la tarjeta <em>"📤 Enviar comando personalizado"</em>, el usuario puede escribir cualquier tópico (ej. <code class="text-sky-300">hogar/cocina/ventilador</code>) y cualquier mensaje (ej. <code class="text-emerald-300">velocidad_2</code>) y pulsar <strong>Publicar</strong>.</li>
+                  </ul>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                  <div class="font-bold text-emerald-400 mb-1">2️⃣ Desde la App Android:</div>
+                  <p class="text-slate-300">
+                    Cuando el usuario toca un botón en el teléfono, el método <code class="text-emerald-300">publishWithConfirmation(topic, payload, msg)</code> convierte el texto en bytes (<code class="text-white">payload.getBytes()</code>), crea un objeto <code class="text-white">MqttMessage</code> con calidad de entrega <code class="text-white">QoS 1</code> y lo envía al broker EMQX mediante <code class="text-emerald-300">client.publish(...)</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 block mb-1.5">Código exacto cuando el usuario envía un dato:</span>
+                <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 overflow-x-auto"><code>// EN LA WEB (JavaScript - MQTT.js):
+client.publish("hogar/living/luz/set", "on", { qos: 1, retain: true });
+
+// EN ANDROID (Java - Paho MQTT):
+MqttMessage message = new MqttMessage("on".getBytes());
+message.setQos(1);
+client.publish("hogar/living/luz/set", message, null, callback);</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- 📥 CÓMO RECIBIR INFORMACIÓN (SUBSCRIBE) -->
+          <div class="bg-slate-950/95 border border-sky-500/40 rounded-2xl p-5 sm:p-6 flex flex-col justify-between gap-4">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Flujo de Entrada · Receptor (Subscribe)</span>
+                  <h3 class="text-lg sm:text-xl font-bold text-white mt-0.5">📥 ¿Cómo el usuario RECIBE información?</h3>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                  SUBSCRIBE
+                </span>
+              </div>
+
+              <p class="text-xs text-slate-300 leading-relaxed">
+                En MQTT, recibir información consta de dos pasos: primero <strong>Suscribirse (Subscribe)</strong> a un tópico (como <code class="text-amber-300">hogar/#</code>, donde <code class="text-amber-300">#</code> significa <em>"todos los subtópicos dentro de hogar"</em>) y segundo <strong>Escuchar el Evento de Llegada</strong> que el broker empuja en tiempo real sin necesidad de recargar la página.
+              </p>
+
+              <div class="space-y-2.5 text-xs">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                  <div class="font-bold text-sky-400 mb-1">1️⃣ En la Página Web (Monitor y Visor de Suscripción):</div>
+                  <ul class="list-disc list-inside text-slate-300 space-y-1">
+                    <li><strong>Suscripción automática o manual:</strong> Al conectarse, la web se suscribe automáticamente a <code class="text-amber-300">hogar/#</code>. Además, el usuario puede agregar nuevos tópicos en la barra <em>"+ Suscribir"</em>.</li>
+                    <li><strong>Recepción en vivo:</strong> Cuando Android (u otro usuario) publica algo, se dispara <code class="text-sky-300">client.on("message", ...)</code>, que enciende los indicadores LED del <strong>Monitor</strong> y añade el registro con hora exacta en la consola del <strong>Visor de Suscripción</strong>.</li>
+                  </ul>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                  <div class="font-bold text-sky-400 mb-1">2️⃣ En la App Android:</div>
+                  <p class="text-slate-300">
+                    Al conectar, Android ejecuta <code class="text-sky-300">client.subscribe("hogar/#", 1, ...)</code>. Cada vez que la Web o cualquier sensor publica un dato en <code class="text-amber-300">hogar/...</code>, se activa automáticamente el callback <code class="text-sky-300">messageArrived(topic, message)</code>, mostrando un <em>Toast</em> emergente y agregando la línea al <strong>📡 Visor de Suscripción</strong> inferior de la app.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 block mb-1.5">Código exacto cuando el usuario recibe un dato:</span>
+                <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 overflow-x-auto"><code>// EN LA WEB (JavaScript - MQTT.js):
+client.subscribe("hogar/#", { qos: 1 });
+client.on("message", (topic, payload) =&gt; {
+  showMessage(topic, payload.toString()); // Actualiza Monitor y Visor
+});
+
+// EN ANDROID (Java - Paho MQTT):
+client.subscribe("hogar/#", 1, null, callback);
+@Override
+public void messageArrived(String topic, MqttMessage message) {
+  String dato = new String(message.getPayload());
+  runOnUiThread(() -&gt; appendToSubscriptionLog(topic, dato));
+}</code></pre>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Nueva Sección: Cómo el Usuario Envía (Publish) y Recibe (Subscribe) Información -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+
+          <!-- 📤 CÓMO ENVIAR INFORMACIÓN (PUBLISH) -->
+          <div class="bg-slate-950/95 border border-emerald-500/40 rounded-2xl p-5 sm:p-6 flex flex-col justify-between gap-4">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Flujo de Salida · Emisor (Publish)</span>
+                  <h3 class="text-lg sm:text-xl font-bold text-white mt-0.5">📤 ¿Cómo el usuario ENVÍA información?</h3>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  PUBLISH
+                </span>
+              </div>
+
+              <p class="text-xs text-slate-300 leading-relaxed">
+                En MQTT, enviar información se llama <strong>Publicar (Publish)</strong>. El usuario envía un paquete con dos datos clave: el <strong>Tópico (Topic)</strong> (la dirección o canal, ej. <code class="text-sky-300">hogar/living/luz/set</code>) y el <strong>Payload (Mensaje)</strong> (el valor o comando, ej. <code class="text-emerald-300">on</code>).
+              </p>
+
+              <div class="space-y-2.5 text-xs">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                  <div class="font-bold text-emerald-400 mb-1">1️⃣ Desde la Página Web (Panel de Control):</div>
+                  <ul class="list-disc list-inside text-slate-300 space-y-1">
+                    <li><strong>Con los botones rápidos:</strong> Al pulsar <em>Encender</em>, <em>Abrir</em>, <em>Activar</em> o mover el <em>Termostato</em>, la web lee el tópico y el valor del botón y ejecuta <code class="text-emerald-300">client.publish(topic, payload)</code>.</li>
+                    <li><strong>Con el formulario personalizado:</strong> En la tarjeta <em>"📤 Enviar comando personalizado"</em>, el usuario puede escribir cualquier tópico (ej. <code class="text-sky-300">hogar/cocina/ventilador</code>) y cualquier mensaje (ej. <code class="text-emerald-300">velocidad_2</code>) y pulsar <strong>Publicar</strong>.</li>
+                  </ul>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                  <div class="font-bold text-emerald-400 mb-1">2️⃣ Desde la App Android:</div>
+                  <p class="text-slate-300">
+                    Cuando el usuario toca un botón en el teléfono, el método <code class="text-emerald-300">publishWithConfirmation(topic, payload, msg)</code> convierte el texto en bytes (<code class="text-white">payload.getBytes()</code>), crea un objeto <code class="text-white">MqttMessage</code> con calidad de entrega <code class="text-white">QoS 1</code> y lo envía al broker EMQX mediante <code class="text-emerald-300">client.publish(...)</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 block mb-1.5">Código exacto cuando el usuario envía un dato:</span>
+                <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 overflow-x-auto"><code>// EN LA WEB (JavaScript - MQTT.js):
+client.publish("hogar/living/luz/set", "on", { qos: 1, retain: true });
+
+// EN ANDROID (Java - Paho MQTT):
+MqttMessage message = new MqttMessage("on".getBytes());
+message.setQos(1);
+client.publish("hogar/living/luz/set", message, null, callback);</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- 📥 CÓMO RECIBIR INFORMACIÓN (SUBSCRIBE) -->
+          <div class="bg-slate-950/95 border border-sky-500/40 rounded-2xl p-5 sm:p-6 flex flex-col justify-between gap-4">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Flujo de Entrada · Receptor (Subscribe)</span>
+                  <h3 class="text-lg sm:text-xl font-bold text-white mt-0.5">📥 ¿Cómo el usuario RECIBE información?</h3>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                  SUBSCRIBE
+                </span>
+              </div>
+
+              <p class="text-xs text-slate-300 leading-relaxed">
+                En MQTT, recibir información consta de dos pasos: primero <strong>Suscribirse (Subscribe)</strong> a un tópico (como <code class="text-amber-300">hogar/#</code>, donde <code class="text-amber-300">#</code> significa <em>"todos los subtópicos dentro de hogar"</em>) y segundo <strong>Escuchar el Evento de Llegada</strong> que el broker empuja en tiempo real sin necesidad de recargar la página.
+              </p>
+
+              <div class="space-y-2.5 text-xs">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                  <div class="font-bold text-sky-400 mb-1">1️⃣ En la Página Web (Monitor y Visor de Suscripción):</div>
+                  <ul class="list-disc list-inside text-slate-300 space-y-1">
+                    <li><strong>Suscripción automática o manual:</strong> Al conectarse, la web se suscribe automáticamente a <code class="text-amber-300">hogar/#</code>. Además, el usuario puede agregar nuevos tópicos en la barra <em>"+ Suscribir"</em>.</li>
+                    <li><strong>Recepción en vivo:</strong> Cuando Android (u otro usuario) publica algo, se dispara <code class="text-sky-300">client.on("message", ...)</code>, que enciende los indicadores LED del <strong>Monitor</strong> y añade el registro con hora exacta en la consola del <strong>Visor de Suscripción</strong>.</li>
+                  </ul>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                  <div class="font-bold text-sky-400 mb-1">2️⃣ En la App Android:</div>
+                  <p class="text-slate-300">
+                    Al conectar, Android ejecuta <code class="text-sky-300">client.subscribe("hogar/#", 1, ...)</code>. Cada vez que la Web o cualquier sensor publica un dato en <code class="text-amber-300">hogar/...</code>, se activa automáticamente el callback <code class="text-sky-300">messageArrived(topic, message)</code>, mostrando un <em>Toast</em> emergente y agregando la línea al <strong>📡 Visor de Suscripción</strong> inferior de la app.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 block mb-1.5">Código exacto cuando el usuario recibe un dato:</span>
+                <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 overflow-x-auto"><code>// EN LA WEB (JavaScript - MQTT.js):
+client.subscribe("hogar/#", { qos: 1 });
+client.on("message", (topic, payload) =&gt; {
+  showMessage(topic, payload.toString()); // Actualiza Monitor y Visor
+});
+
+// EN ANDROID (Java - Paho MQTT):
+client.subscribe("hogar/#", 1, null, callback);
+@Override
+public void messageArrived(String topic, MqttMessage message) {
+  String dato = new String(message.getPayload());
+  runOnUiThread(() -&gt; appendToSubscriptionLog(topic, dato));
+}</code></pre>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Tabla Resumen de Tópicos y Payloads -->
+        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-5 overflow-x-auto">
+          <h3 class="text-base font-bold text-white mb-3">📋 Mapa de Tópicos MQTT Compartidos (Android ↔ Web)</h3>
+          <table class="w-full text-left border-collapse text-xs font-mono">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th class="py-2.5 px-3">Dispositivo</th>
+                <th class="py-2.5 px-3">Tópico de Publicación / Escucha</th>
+                <th class="py-2.5 px-3">Payloads Válidos</th>
+                <th class="py-2.5 px-3">Efecto en Monitor y App</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/70 text-slate-200">
+              <tr>
+                <td class="py-2.5 px-3 font-sans font-semibold text-white">💡 Living - Luz</td>
+                <td class="py-2.5 px-3 text-sky-400">hogar/living/luz/set</td>
+                <td class="py-2.5 px-3"><span class="text-emerald-400">on</span> | <span class="text-slate-400">off</span></td>
+                <td class="py-2.5 px-3 font-sans text-slate-400">Enciende o apaga el indicador LED de luz del living</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-sans font-semibold text-white">🚪 Puerta Principal</td>
+                <td class="py-2.5 px-3 text-sky-400">hogar/puerta/principal/set</td>
+                <td class="py-2.5 px-3"><span class="text-emerald-400">open</span> | <span class="text-slate-400">close</span></td>
+                <td class="py-2.5 px-3 font-sans text-slate-400">Cambia el estado a Abierta o Cerrada</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-sans font-semibold text-white">🚨 Alarma</td>
+                <td class="py-2.5 px-3 text-sky-400">hogar/alarma/set</td>
+                <td class="py-2.5 px-3"><span class="text-rose-400">enabled</span> | <span class="text-slate-400">disabled</span></td>
+                <td class="py-2.5 px-3 font-sans text-slate-400">Activa alerta roja en el monitor o la desactiva</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-sans font-semibold text-white">📺 TV Living</td>
+                <td class="py-2.5 px-3 text-sky-400">hogar/living/tv/set</td>
+                <td class="py-2.5 px-3"><span class="text-emerald-400">on</span> | <span class="text-slate-400">off</span></td>
+                <td class="py-2.5 px-3 font-sans text-slate-400">Enciende o apaga el estado de la TV</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-sans font-semibold text-white">🌡️ Termostato</td>
+                <td class="py-2.5 px-3 text-sky-400">hogar/clima/temperatura/set</td>
+                <td class="py-2.5 px-3"><span class="text-emerald-400">16</span> a <span class="text-emerald-400">30</span></td>
+                <td class="py-2.5 px-3 font-sans text-slate-400">Sincroniza los °C en el deslizador y tarjeta de clima</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         GUÍA PRÁCTICA PASO A PASO: CONEXIÓN MQTT EN ANDROID Y EN LA WEB
+         ========================================================================= -->
+    <section id="page-guide" class="max-w-7xl mx-auto px-4 sm:px-6 pb-16 pt-2">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-8">
+
+        <!-- Encabezado de la Guía -->
+        <div class="border-b border-slate-800 pb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-widest text-amber-400 block">Documentación Técnica Paso a Paso</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">📘 Guía Práctica: Cómo Conectar Android y la Web con MQTT (EMQX Cloud)</h2>
+            <p class="text-slate-400 text-sm mt-2 max-w-3xl">
+              Explicación detallada línea por línea de la arquitectura, puertos, permisos, código de Android (<code class="text-emerald-300">MainActivity.java</code>) y código Web (<code class="text-sky-300">MQTT.js</code>) para que ambos sistemas funcionen en paralelo sin desconectarse.
+            </p>
+          </div>
+          <div class="flex flex-col gap-1.5 bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs font-mono">
+            <div class="text-slate-400">Host EMQX: <span class="text-white">h0bc12ce.ala.us-east-1.emqxsl.com</span></div>
+            <div class="text-emerald-400">Puerto Android (TLS): <span>8883 (ssl://)</span></div>
+            <div class="text-sky-400">Puerto Web (WSS): <span>8084 (wss://.../mqtt)</span></div>
+            <div class="text-amber-300">Tópico Raíz: <span>hogar/#</span></div>
+          </div>
+        </div>
+
+        <!-- 1. Arquitectura y Regla de Oro (Client IDs y Puertos) -->
+        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-5 space-y-4">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>🔑</span> 1. Reglas Clave en EMQX Cloud: ¿Por qué fallaba antes y cómo funciona ahora?
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl">
+              <div class="font-bold text-emerald-400 mb-1">A. Diferencia de Puertos (8883 vs 8084)</div>
+              <p class="text-slate-300 text-xs leading-relaxed">
+                Los navegadores web <strong>no pueden</strong> abrir sockets TCP puros por seguridad; obligatoriamente requieren <strong>WebSockets sobre TLS (<code class="text-sky-300">wss://</code>)</strong> en el puerto <code class="text-sky-300">8084</code>. En cambio, Android nativo usa TCP con SSL (<code class="text-emerald-300">ssl://</code>) en el puerto <code class="text-emerald-300">8883</code> (aunque también soporta 8084). El puerto <code class="text-rose-400">8884</code> está cerrado o reservado para certificados de cliente mutuos, por eso daba <code class="text-rose-400">connack timeout</code>.
+              </p>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl">
+              <div class="font-bold text-sky-400 mb-1">B. Client ID Único por Dispositivo</div>
+              <p class="text-slate-300 text-xs leading-relaxed">
+                En el estándar MQTT, <strong>dos clientes no pueden usar el mismo <code class="text-amber-300">CLIENT_ID</code> al mismo tiempo</strong>. Si Android y la Web se conectan como <code class="text-amber-300">android-device</code>, el broker desconecta inmediatamente al anterior.
+                <br><br>
+                ✅ <strong>Solución:</strong> Android usa <code class="text-emerald-300">"android-device"</code> y la Web usa <code class="text-sky-300">"android-device-web"</code>.
+              </p>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl">
+              <div class="font-bold text-amber-400 mb-1">C. Autorización en EMQX Cloud</div>
+              <p class="text-slate-300 text-xs leading-relaxed">
+                En el panel de EMQX Cloud (<em>Access Control → Authentication / Authorization</em>):
+                <br>• Usuario: <code class="text-white">android-username</code>
+                <br>• Contraseña: <code class="text-white">android-username</code>
+                <br>• Permisos ACL: Permitir <strong>Publish & Subscribe</strong> al tópico <code class="text-amber-300">hogar/#</code> tanto para <code class="text-emerald-300">android-device</code> como para <code class="text-sky-300">android-device-web</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columnas Paralelas de Explicación: Android vs Web -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+          <!-- ==========================================
+               COLUMNA IZQUIERDA: GUÍA ANDROID
+               ========================================== -->
+          <div class="bg-slate-950 border border-emerald-500/30 rounded-2xl p-5 sm:p-6 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Parte 1 · Aplicación Móvil</span>
+                <h3 class="text-xl font-bold text-white mt-0.5">🤖 Cómo Conectar en Android (Java)</h3>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-xs font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                Paho MQTT Android
+              </span>
+            </div>
+
+            <!-- Paso 1 Android: build.gradle -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-emerald-300">Paso 1: Agregar dependencia en <code class="text-white">app/build.gradle</code></h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Se utiliza el fork mantenido <code class="text-emerald-300">hannesa2:paho.mqtt.android</code> compatible con Android 12+ (API 31 a 36).
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>dependencies {
+    // Librería cliente MQTT para Android
+    implementation 'com.github.hannesa2:paho.mqtt.android:3.3.5'
+}</code></pre>
+            </div>
+
+            <!-- Paso 2 Android: AndroidManifest.xml -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-emerald-300">Paso 2: Permisos y Servicio en <code class="text-white">AndroidManifest.xml</code></h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                MQTT corre en un servicio en segundo plano (<code class="text-emerald-300">MqttService</code>). Si no se declara <code class="text-amber-300">info.mqtt.android.service.MqttService</code> dentro de <code class="text-white">&lt;application&gt;</code>, la app nunca se conectará.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>&lt;!-- Permisos necesarios para red y mantener viva la conexión --&gt;
+&lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+&lt;uses-permission android:name="android.permission.WAKE_LOCK" /&gt;
+&lt;uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /&gt;
+
+&lt;application ...&gt;
+    &lt;!-- OBLIGATORIO: Servicio en segundo plano de la librería MQTT --&gt;
+    &lt;service android:name="info.mqtt.android.service.MqttService" /&gt;
+&lt;/application&gt;</code></pre>
+            </div>
+
+            <!-- Paso 3 Android: Constantes y Cliente -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-emerald-300">Paso 3: Configurar Credenciales y Cliente en <code class="text-white">MainActivity.java</code></h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Definimos la URL con <code class="text-emerald-300">ssl://...:8883</code> (TLS nativo) y <code class="text-emerald-300">wss://...:8084/mqtt</code> como respaldo. Luego instanciamos <code class="text-white">MqttAndroidClient</code> con <code class="text-white">Ack.AUTO_ACK</code> para confirmar automáticamente los mensajes recibidos.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>private static final String MQTT_BROKER_URL =
+    "ssl://h0bc12ce.ala.us-east-1.emqxsl.com:8883";
+private static final String CLIENT_ID = "android-device";
+private static final String MQTT_USERNAME = "android-username";
+private static final String MQTT_PASSWORD = "android-username";
+
+// En onCreate():
+client = new MqttAndroidClient(
+    getApplicationContext(),
+    MQTT_BROKER_URL,
+    CLIENT_ID,
+    Ack.AUTO_ACK
+);</code></pre>
+            </div>
+
+            <!-- Paso 4 Android: Conexión y Callbacks -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-emerald-300">Paso 4: Conectar al Broker y Escuchar Mensajes (<code class="text-white">MqttCallbackExtended</code>)</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Usamos <code class="text-white">MqttConnectOptions</code> para enviar usuario, contraseña, reconexión automática y sesión limpia. Cuando <code class="text-emerald-300">connectComplete</code> se dispara, nos suscribimos a <code class="text-amber-300">hogar/#</code>. Cada vez que llega un mensaje a cualquier subtópico de <code class="text-amber-300">hogar/#</code>, se ejecuta <code class="text-emerald-300">messageArrived</code>.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>client.setCallback(new MqttCallbackExtended() {
+    @Override
+    public void connectComplete(boolean reconnect, String serverURI) {
+        // Al conectar o reconectar, nos suscribimos a todos los tópicos del hogar
+        subscribeToTopics();
+    }
+
+    @Override
+    public void messageArrived(String topic, MqttMessage message) {
+        String payload = new String(message.getPayload());
+        // Importante: actualizar la interfaz dentro de runOnUiThread()
+        runOnUiThread(() -&gt; {
+            appendToSubscriptionLog(topic, payload);
+        });
+    }
+
+    @Override
+    public void connectionLost(Throwable cause) { }
+    @Override
+    public void deliveryComplete(IMqttDeliveryToken token) { }
+});
+
+MqttConnectOptions options = new MqttConnectOptions();
+options.setUserName(MQTT_USERNAME);
+options.setPassword(MQTT_PASSWORD.toCharArray());
+options.setAutomaticReconnect(true);
+options.setCleanSession(true);
+
+client.connect(options, null, new IMqttActionListener() {
+    @Override
+    public void onSuccess(IMqttToken asyncActionToken) {
+        // Conexión exitosa
+    }
+    @Override
+    public void onFailure(IMqttToken token, Throwable exception) {
+        // Manejo de error
+    }
+});</code></pre>
+            </div>
+
+            <!-- Paso 5 Android: Suscribir y Publicar -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-emerald-300">Paso 5: Suscribirse (<code class="text-white">subscribe</code>) y Publicar (<code class="text-white">publish</code>)</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                El comodín <code class="text-amber-300">#</code> en <code class="text-amber-300">hogar/#</code> escucha todos los niveles (<code class="text-sky-300">hogar/living/luz/set</code>, <code class="text-sky-300">hogar/alarma/set</code>, etc.) con calidad de servicio <code class="text-white">QoS 1</code> (entrega garantizada al menos una vez).
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>// 1. SUSCRIBIRSE AL TÓPICO RAÍZ
+client.subscribe("hogar/#", 1, null, new IMqttActionListener() { ... });
+
+// 2. PUBLICAR UN COMANDO (ej. encender luz)
+MqttMessage message = new MqttMessage("on".getBytes());
+message.setQos(1);
+client.publish("hogar/living/luz/set", message, null, new IMqttActionListener() { ... });</code></pre>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               COLUMNA DERECHA: GUÍA WEB (HTML + JS)
+               ========================================== -->
+          <div class="bg-slate-950 border border-sky-500/30 rounded-2xl p-5 sm:p-6 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Parte 2 · Navegador Web</span>
+                <h3 class="text-xl font-bold text-white mt-0.5">🌐 Cómo Conectar en la Web (HTML + MQTT.js)</h3>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-xs font-mono bg-sky-500/10 text-sky-300 border border-sky-500/30">
+                MQTT.js + Tailwind CSS
+              </span>
+            </div>
+
+            <!-- Paso 1 Web: Librerías CDN -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-sky-300">Paso 1: Importar Tailwind CSS y MQTT.js en el <code class="text-white">&lt;head&gt;</code></h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                En el archivo <code class="text-white">index.html</code> cargamos Tailwind CSS para el diseño responsivo en paralelo y el bundle oficial de <code class="text-sky-300">mqtt.min.js</code> que expone el objeto global <code class="text-white">mqtt</code> en el navegador.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>&lt;!-- Tailwind CSS para diseño de las 2 páginas en paralelo --&gt;
+&lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;
+
+&lt;!-- Cliente MQTT para navegadores (WebSockets) --&gt;
+&lt;script src="https://unpkg.com/mqtt/dist/mqtt.min.js"&gt;&lt;/script&gt;
+
+&lt;!-- Archivo local de credenciales --&gt;
+&lt;script src="config.local.js"&gt;&lt;/script&gt;</code></pre>
+            </div>
+
+            <!-- Paso 2 Web: config.local.js -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-sky-300">Paso 2: Configurar Puerto <code class="text-white">8084</code> y Client ID en <code class="text-white">config.local.js</code></h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                En EMQX Cloud, las conexiones WebSocket con TLS (<code class="text-sky-300">wss://</code>) usan el puerto <code class="text-sky-300">8084</code> y el path <code class="text-sky-300">/mqtt</code>. Además asignamos <code class="text-amber-300">android-device-web</code> para no colisionar con el <code class="text-emerald-300">android-device</code> del teléfono.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>window.MQTT_CONFIG = {
+  brokerUrl: "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt",
+  clientId: "android-device-web",
+  username: "android-username",
+  password: "android-username",
+  topic: "hogar/#"
+};</code></pre>
+            </div>
+
+            <!-- Paso 3 Web: mqtt.connect() -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-sky-300">Paso 3: Iniciar la Conexión WebSocket (<code class="text-white">mqtt.connect</code>)</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Llamamos a <code class="text-sky-300">mqtt.connect(brokerUrl, options)</code>. La librería abre un túnel WebSocket seguro y realiza el handshake MQTT enviando las credenciales.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>const client = mqtt.connect(
+  "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt",
+  {
+    clientId: "android-device-web",
+    username: "android-username",
+    password: "android-username",
+    clean: true,           // Sesión limpia al conectar
+    connectTimeout: 8000,  // Tiempo máximo de espera (8 seg)
+    reconnectPeriod: 4000  // Reintento automático cada 4 seg
+  }
+);</code></pre>
+            </div>
+
+            <!-- Paso 4 Web: Eventos connect y message -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-sky-300">Paso 4: Suscribirse y Actualizar el Monitor en Tiempo Real</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Escuchamos el evento <code class="text-emerald-300">'connect'</code> para suscribirnos a <code class="text-amber-300">hogar/#</code>, y el evento <code class="text-sky-300">'message'</code> para recibir cada cambio enviado desde Android o desde el propio panel web.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>// 1. Cuando el broker acepta la conexión (CONNACK):
+client.on("connect", () =&gt; {
+  setStatus("connected", "✅ Conectado (android-device-web)");
+  // Suscripción con QoS 1 y nl: true (evita recibir eco duplicado propio)
+  client.subscribe("hogar/#", { qos: 1, nl: true });
+});
+
+// 2. Cuando llega un mensaje desde Android o desde otro cliente:
+client.on("message", (topic, payload) =&gt; {
+  const texto = payload.toString();
+  // Actualiza las tarjetas LED del Monitor y agrega la fila al Visor
+  showMessage(topic, texto);
+});</code></pre>
+            </div>
+
+            <!-- Paso 5 Web: Publicar desde los botones HTML -->
+            <div class="space-y-2">
+              <h4 class="text-sm font-bold text-sky-300">Paso 5: Publicar Comandos desde el Panel de Control Web</h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Cada botón del HTML tiene atributos <code class="text-amber-300">data-pub-topic</code> y <code class="text-amber-300">data-pub-payload</code>. Al hacer clic, se envía el mensaje al broker con <code class="text-white">client.publish()</code> y se actualiza la vista paralela del Monitor al instante.
+              </p>
+              <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>&lt;!-- Botón en HTML --&gt;
+&lt;button data-pub-topic="hogar/living/luz/set" data-pub-payload="on"&gt;
+  Encender
+&lt;/button&gt;
+
+// Función de publicación en JavaScript:
+function publishMessage(topic, payload) {
+  // 1. Actualiza el Monitor local inmediatamente
+  showMessage(topic, String(payload));
+
+  // 2. Publica en EMQX Cloud con QoS 1 y retain: true
+  if (client &amp;&amp; client.connected) {
+    client.publish(topic, String(payload), { qos: 1, retain: true });
+  }
+}</code></pre>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Tabla Resumen de Tópicos y Payloads -->
+        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-5 overflow-x-auto">
+          <h3 class="text-base font-bold text-white mb-3">📋 Mapa de Tópicos MQTT Compartidos (Android ↔ Web)</h3>
+          <table class="w-full text-left border-collapse text-xs font-mono">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th class="py-2.5 px-3">Dispositivo</th>
+                <th class="py-2.5 px-3">Tópico de Publicación / Escucha</th>
+                <th class="py-2.5 px-3">Payloads Válidos</th>
+                <th class="py-2.5 px-3">Efecto en Monitor y App</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/70 text-slate-200">
+              <tr>
+                <td class="py-2.5 px-3 font-sans font-semibold text-white">💡 Living - Luz</td>
+                <td class="py-2.5 px-3 text-sky-400">hogar/living/luz/set</td>
+                <td class="py-2.5 px-3"><span class="text-emerald-400">on</span> | <span class="text-slate-400">off</span></td>
+                <td class="py-2.5 px-3 font-sans text-slate-400">Enciende o apaga el indicador LED de luz del living</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-sans font-semibold text-white">🚪 Puerta Principal</td>
+                <td class="py-2.5 px-3 text-sky-400">hogar/puerta/principal/set</td>
+                <td class="py-2.5 px-3"><span class="text-emerald-400">open</span> | <span class="text-slate-400">close</span></td>
+                <td class="py-2.5 px-3 font-sans text-slate-400">Cambia el estado a Abierta o Cerrada</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-sans font-semibold text-white">🚨 Alarma</td>
+                <td class="py-2.5 px-3 text-sky-400">hogar/alarma/set</td>
+                <td class="py-2.5 px-3"><span class="text-rose-400">enabled</span> | <span class="text-slate-400">disabled</span></td>
+                <td class="py-2.5 px-3 font-sans text-slate-400">Activa alerta roja en el monitor o la desactiva</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-sans font-semibold text-white">📺 TV Living</td>
+                <td class="py-2.5 px-3 text-sky-400">hogar/living/tv/set</td>
+                <td class="py-2.5 px-3"><span class="text-emerald-400">on</span> | <span class="text-slate-400">off</span></td>
+                <td class="py-2.5 px-3 font-sans text-slate-400">Enciende o apaga el estado de la TV</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-sans font-semibold text-white">🌡️ Termostato</td>
+                <td class="py-2.5 px-3 text-sky-400">hogar/clima/temperatura/set</td>
+                <td class="py-2.5 px-3"><span class="text-emerald-400">16</span> a <span class="text-emerald-400">30</span></td>
+                <td class="py-2.5 px-3 font-sans text-slate-400">Sincroniza los °C en el deslizador y tarjeta de clima</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
     <script>
       const form = document.getElementById("connection-form");
       const connectButton = document.getElementById("connect-button");
@@ -376,10 +1279,11 @@
         document.getElementById("config-drawer").classList.toggle("hidden");
       });
 
-      // Conmutador entre Vista Paralela, solo Página Control o solo Página Monitor
+      // Conmutador entre Vista Paralela, solo Página Control, solo Página Monitor o Guía Práctica
       const pagesContainer = document.getElementById("pages-container");
       const pageControl = document.getElementById("page-control");
       const pageMonitor = document.getElementById("page-monitor");
+      const pageGuide = document.getElementById("page-guide");
       const viewTabs = document.querySelectorAll(".view-tab");
 
       viewTabs.forEach((tab) => {
@@ -391,17 +1295,26 @@
           tab.className = "view-tab px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 transition";
 
           if (view === "split") {
+            pagesContainer.classList.remove("hidden");
             pagesContainer.classList.add("lg:grid-cols-2");
             pageControl.classList.remove("hidden");
             pageMonitor.classList.remove("hidden");
+            pageGuide.classList.remove("hidden");
           } else if (view === "control") {
+            pagesContainer.classList.remove("hidden");
             pagesContainer.classList.remove("lg:grid-cols-2");
             pageControl.classList.remove("hidden");
             pageMonitor.classList.add("hidden");
+            pageGuide.classList.add("hidden");
           } else if (view === "monitor") {
+            pagesContainer.classList.remove("hidden");
             pagesContainer.classList.remove("lg:grid-cols-2");
             pageControl.classList.add("hidden");
             pageMonitor.classList.remove("hidden");
+            pageGuide.classList.add("hidden");
+          } else if (view === "guide") {
+            pagesContainer.classList.add("hidden");
+            pageGuide.classList.remove("hidden");
           }
         });
       });

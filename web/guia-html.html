@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guía Práctica Web (HTML + JS) · MQTT EMQX</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-sky-500 selection:text-slate-950">
+
+  <!-- Barra de Navegación entre Páginas -->
+  <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/40 flex items-center justify-center text-xl">
+          🌐
+        </div>
+        <div>
+          <span class="text-xs font-bold uppercase tracking-widest text-sky-400 block">Documentación Web · HTML + Tailwind + MQTT.js</span>
+          <h1 class="text-lg sm:text-xl font-bold text-white">Guía Práctica MQTT en la Web (HTML y JavaScript)</h1>
+        </div>
+      </div>
+
+      <nav class="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold">
+        <a href="index.html" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          🏠 Volver al Panel y Monitor
+        </a>
+        <a href="guia-java.html" class="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition">
+          ← 🤖 Ir a Guía Android (Java)
+        </a>
+        <a href="guia-html.html" class="px-3.5 py-2 rounded-xl bg-sky-500 text-slate-950 font-bold transition">
+          🌐 Guía Web (HTML + JS)
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+    <!-- Resumen de Parámetros de Conexión en la Web -->
+    <section class="bg-slate-900/80 border border-sky-500/30 rounded-2xl p-6 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Configuración del Navegador Web</span>
+          <h2 class="text-2xl font-extrabold text-white mt-1">Conexión de HTML y JavaScript con EMQX Cloud</h2>
+          <p class="text-sm text-slate-400 mt-1 max-w-2xl">
+            Los navegadores web se conectan a MQTT mediante <strong>WebSockets Seguros (<code class="text-sky-300">wss://</code>)</strong> en el puerto <code class="text-sky-300">8084</code> usando la librería <code class="text-sky-300">MQTT.js</code>.
+          </p>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono space-y-1">
+          <div><span class="text-slate-400">Broker URL:</span> <span class="text-sky-400">wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt</span></div>
+          <div><span class="text-slate-400">Client ID:</span> <span class="text-amber-300">android-device-web</span></div>
+          <div><span class="text-slate-400">Usuario:</span> <span class="text-white">android-username</span></div>
+          <div><span class="text-slate-400">Contraseña:</span> <span class="text-white">android-username</span></div>
+          <div><span class="text-slate-400">Tópico Raíz:</span> <span class="text-emerald-400">hogar/#</span></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5 text-xs">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+          <div class="font-bold text-sky-400 text-sm mb-1">1. ¿Por qué el puerto 8084 y no 8884?</div>
+          <p class="text-slate-300 leading-relaxed">
+            En EMQX Cloud, el puerto <code class="text-sky-300">8084</code> es el canal abierto para WebSockets TLS (<code class="text-sky-300">wss://.../mqtt</code>). El puerto <code class="text-rose-400">8884</code> está cerrado o requiere certificado de cliente, causando <code class="text-rose-400">connack timeout</code>.
+          </p>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+          <div class="font-bold text-sky-400 text-sm mb-1">2. Client ID: <code class="text-amber-300">android-device-web</code></div>
+          <p class="text-slate-300 leading-relaxed">
+            Al usar un Client ID propio para la web (<code class="text-amber-300">android-device-web</code>) distinto del teléfono (<code class="text-emerald-300">android-device</code>), ambos clientes pueden operar al mismo tiempo en paralelo.
+          </p>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+          <div class="font-bold text-sky-400 text-sm mb-1">3. Diseño Paralelo con Tailwind CSS</div>
+          <p class="text-slate-300 leading-relaxed">
+            El archivo <code class="text-white">index.html</code> divide la pantalla en dos columnas con <code class="text-sky-300">grid-cols-1 lg:grid-cols-2</code>: a la izquierda el <strong>Panel de Control</strong> y a la derecha el <strong>Monitor + Visor</strong>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso a Paso de Configuración en HTML + JS -->
+    <section class="space-y-6">
+      <h2 class="text-xl font-bold text-white">🛠️ Paso a Paso: Estructura del HTML y Conexión con MQTT.js</h2>
+
+      <!-- Paso 1 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-sky-400">Paso 1: Cargar Tailwind CSS, MQTT.js y <code class="text-white">config.local.js</code> en el <code class="text-white">&lt;head&gt;</code></h3>
+          <span class="text-xs font-mono text-slate-400">index.html</span>
+        </div>
+        <p class="text-sm text-slate-300">
+          No hace falta instalar Node.js para el navegador: importamos directamente el CDN de Tailwind CSS y el bundle de <code class="text-sky-300">mqtt.min.js</code>:
+        </p>
+        <pre class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 overflow-x-auto"><code>&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;Sistema MQTT · Control y Monitor&lt;/title&gt;
+  &lt;!-- 1. Tailwind CSS para los estilos modernos y el diseño en paralelo --&gt;
+  &lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;
+
+  &lt;!-- 2. Librería oficial MQTT.js para navegadores web --&gt;
+  &lt;script src="https://unpkg.com/mqtt/dist/mqtt.min.js"&gt;&lt;/script&gt;
+
+  &lt;!-- 3. Configuración de credenciales del broker --&gt;
+  &lt;script src="config.local.js"&gt;&lt;/script&gt;
+&lt;/head&gt;</code></pre>
+      </div>
+
+      <!-- Paso 2 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-sky-400">Paso 2: Definir las credenciales en <code class="text-white">web/config.local.js</code></h3>
+          <span class="text-xs font-mono text-slate-400">config.local.js</span>
+        </div>
+        <p class="text-sm text-slate-300">
+          Guardamos los datos del broker en <code class="text-sky-300">window.MQTT_CONFIG</code> apuntando al puerto WebSocket TLS <code class="text-sky-300">8084</code>:
+        </p>
+        <pre class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 overflow-x-auto"><code>window.MQTT_CONFIG = {
+  brokerUrl: "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt",
+  clientId: "android-device-web",
+  username: "android-username",
+  password: "android-username",
+  topic: "hogar/#"
+};</code></pre>
+      </div>
+
+      <!-- Paso 3 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-sky-400">Paso 3: Conectar al Broker con <code class="text-white">mqtt.connect()</code></h3>
+          <span class="text-xs font-mono text-slate-400">JavaScript</span>
+        </div>
+        <p class="text-sm text-slate-300">
+          Al abrir la página o pulsar el botón <strong>Conectar</strong>, ejecutamos <code class="text-sky-300">mqtt.connect(brokerUrl, options)</code> y actualizamos el indicador de estado superior cuando llega el evento <code class="text-emerald-300">'connect'</code>:
+        </p>
+        <pre class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 overflow-x-auto"><code>function connectBroker() {
+  client = mqtt.connect(brokerUrl, {
+    clientId: "android-device-web",
+    username: "android-username",
+    password: "android-username",
+    clean: true,
+    connectTimeout: 8000,
+    reconnectPeriod: 4000
+  });
+
+  // Se dispara cuando EMQX acepta la conexión
+  client.on("connect", () =&gt; {
+    setStatus("connected", "✅ Conectado (android-device-web)");
+    // Nos suscribimos inmediatamente a todos los eventos del hogar
+    client.subscribe("hogar/#", { qos: 1, nl: true });
+  });
+
+  // Se dispara si hay un error de red o credenciales
+  client.on("error", (err) =&gt; {
+    setStatus("error", "❌ Error: " + err.message);
+  });
+}</code></pre>
+      </div>
+    </section>
+
+    <!-- Sección Crucial: Cómo el Usuario ENVÍA y RECIBE Información en el HTML -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- 📤 CÓMO ENVIAR INFORMACIÓN EN LA WEB (PUBLISH) -->
+      <div class="bg-slate-900/90 border border-emerald-500/40 rounded-2xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Flujo de Salida en la Web</span>
+            <h3 class="text-xl font-bold text-white mt-0.5">📤 Cómo el usuario ENVÍA información (Publish)</h3>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            client.publish()
+          </span>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Desde la <strong>Página 1: Panel de Control</strong> del HTML, el usuario tiene 3 formas de enviar información al broker MQTT (y que llegue al instante al teléfono Android):
+        </p>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-300">1. Botones HTML con atributos <code class="text-white">data-pub-topic</code> y <code class="text-white">data-pub-payload</code>:</h4>
+          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>&lt;!-- Botones en el HTML --&gt;
+&lt;button data-pub-topic="hogar/living/luz/set" data-pub-payload="on"&gt;
+  Encender
+&lt;/button&gt;
+&lt;button data-pub-topic="hogar/living/luz/set" data-pub-payload="off"&gt;
+  Apagar
+&lt;/button&gt;
+
+&lt;script&gt;
+  // Escuchador para todos los botones de control
+  document.querySelectorAll("[data-pub-topic]").forEach((btn) =&gt; {
+    btn.addEventListener("click", () =&gt; {
+      publishMessage(btn.dataset.pubTopic, btn.dataset.pubPayload);
+    });
+  });
+&lt;/script&gt;</code></pre>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-300">2. Función <code class="text-white">publishMessage()</code> que envía el paquete a EMQX:</h4>
+          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>function publishMessage(topic, payload) {
+  const strPayload = String(payload);
+
+  // 1. Actualiza la vista del Monitor en paralelo de inmediato
+  showMessage(topic, strPayload);
+
+  // 2. Envía el mensaje por WebSocket al broker EMQX Cloud
+  if (client &amp;&amp; client.connected) {
+    client.publish(topic, strPayload, {
+      qos: 1,       // Garantiza que el broker reciba el comando
+      retain: true  // Guarda el último estado en el broker
+    });
+  }
+}</code></pre>
+        </div>
+      </div>
+
+      <!-- 📥 CÓMO RECIBIR INFORMACIÓN EN LA WEB (SUBSCRIBE) -->
+      <div class="bg-slate-900/90 border border-sky-500/40 rounded-2xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Flujo de Entrada en la Web</span>
+            <h3 class="text-xl font-bold text-white mt-0.5">📥 Cómo el usuario RECIBE información (Subscribe)</h3>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">
+            client.on("message")
+          </span>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          En la <strong>Página 2: Monitor y Visor de Suscripción</strong> del HTML, la web mantiene una suscripción activa a <code class="text-amber-300">hogar/#</code>. Cuando alguien toca un botón en la App Android, el navegador recibe el paquete y actualiza tanto las tarjetas LED como la lista de mensajes.
+        </p>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-sky-300">1. Escuchar la llegada de mensajes con <code class="text-white">client.on("message")</code>:</h4>
+          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>// Cada vez que EMQX envía un mensaje de un tópico suscrito:
+client.on("message", (topic, payload) =&gt; {
+  // payload llega como Uint8Array/Buffer, lo convertimos a texto
+  const mensajeTexto = payload.toString();
+
+  // Actualizamos las tarjetas del Monitor y el historial del Visor
+  showMessage(topic, mensajeTexto);
+});</code></pre>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-sky-300">2. Actualizar el Monitor LED y el Visor de Suscripción:</h4>
+          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>function updateMonitorAndControl(topic, payload) {
+  const val = payload.trim().toLowerCase();
+  const hora = new Date().toLocaleTimeString();
+
+  if (topic === "hogar/living/luz/set") {
+    const encendida = (val === "on");
+    document.getElementById("mon-val-luz").textContent =
+      encendida ? "Encendida" : "Apagada";
+    document.getElementById("mon-time-luz").textContent =
+      "Actualizado " + hora;
+    // Enciende el borde y el LED verde en la tarjeta del Monitor
+    styleMonitorCard("mon-card-luz", "mon-led-luz", encendida);
+  }
+  // ... lo mismo para puerta, alarma, tv y termostato
+}</code></pre>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</body>
+</html>
