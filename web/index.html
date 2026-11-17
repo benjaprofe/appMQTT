@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control y Visor MQTT · Hogar</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="config.local.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0c1118;
+      color: #e6edf3;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 36px 20px;
+    }
+
+    header { margin-bottom: 24px; }
+
+    .eyebrow {
+      color: #74d4b4;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h1 { margin: 6px 0; font-size: clamp(24px, 4vw, 36px); }
+    .intro, .hint { color: #9aa8b7; line-height: 1.5; margin: 6px 0; font-size: 14px; }
+    .panel { background: #141c26; border: 1px solid #293544; border-radius: 14px; margin-bottom: 24px; }
+
+    .connection {
+      display: grid;
+      grid-template-columns: minmax(220px, 2fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(130px, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+      padding: 18px;
+    }
+
+    label { display: block; margin-bottom: 6px; color: #bac6d2; font-size: 12px; font-weight: 600; }
+
+    input, select {
+      width: 100%;
+      min-height: 40px;
+      padding: 0 12px;
+      color: #e6edf3;
+      background: #0c1118;
+      border: 1px solid #354354;
+      border-radius: 8px;
+      outline: none;
+      font: inherit;
+      font-size: 14px;
+    }
+
+    input:focus, select:focus { border-color: #74d4b4; }
+
+    button {
+      min-height: 40px;
+      padding: 0 16px;
+      color: #0c1714;
+      background: #74d4b4;
+      border: 0;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+
+    button:hover:not(:disabled) { opacity: .9; }
+    button:active:not(:disabled) { transform: scale(0.98); }
+    button:disabled { cursor: default; opacity: .5; }
+
+    .btn-secondary {
+      background: #25313e;
+      color: #e6edf3;
+      border: 1px solid #354354;
+    }
+
+    .btn-danger {
+      background: #e5534b;
+      color: #fff;
+    }
+
+    .connection-info {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px 24px;
+      align-items: center;
+      padding: 12px 18px;
+      border-top: 1px solid #293544;
+      color: #9aa8b7;
+      font-size: 13px;
+    }
+
+    .status { display: inline-flex; gap: 8px; align-items: center; color: #bac6d2; font-weight: 600; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #7d8996; }
+    .status[data-state="connected"] .dot { background: #74d4b4; box-shadow: 0 0 8px #74d4b4; }
+    .status[data-state="connecting"] .dot { background: #f0b429; }
+    .status[data-state="error"] .dot { background: #ff7777; }
+
+    .port-shortcuts {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .chip {
+      min-height: 26px;
+      padding: 2px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      background: #1e2936;
+      color: #8bc7ff;
+      border: 1px solid #2f4054;
+    }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin: 0 0 12px;
+    }
+
+    h2 { margin: 0; font-size: 18px; }
+    .count { color: #9aa8b7; font-size: 13px; }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: #141c26;
+      border: 1px solid #293544;
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #1e2936;
+      color: #9aa8b7;
+      border: 1px solid #354354;
+    }
+
+    .badge.active {
+      background: rgba(116, 212, 180, 0.16);
+      color: #74d4b4;
+      border-color: rgba(116, 212, 180, 0.4);
+    }
+
+    .card-topic {
+      color: #8bc7ff;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .thermostat-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .thermostat-row input[type="range"] {
+      flex: 1;
+      padding: 0;
+      accent-color: #74d4b4;
+    }
+
+    .temp-display {
+      font-size: 22px;
+      font-weight: 800;
+      color: #74d4b4;
+      min-width: 56px;
+      text-align: center;
+    }
+
+    .sub-bar {
+      display: flex;
+      gap: 8px;
+      padding: 14px 16px;
+      border-bottom: 1px solid #293544;
+      align-items: center;
+    }
+
+    .sub-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #293544;
+      background: #101720;
+    }
+
+    .sub-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #1c2836;
+      color: #8bc7ff;
+      border: 1px solid #2f4258;
+    }
+
+    .sub-tag button {
+      min-height: auto;
+      padding: 0 4px;
+      background: transparent;
+      color: #9aa8b7;
+      font-size: 13px;
+    }
+
+    .feed {
+      max-height: 480px;
+      overflow-y: auto;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 82px minmax(140px, 1.2fr) 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #25313e;
+      font-size: 13px;
+    }
+
+    .event:last-child { border-bottom: 0; }
+    .event time, .empty { color: #9aa8b7; font-size: 12px; }
+    .topic { overflow-wrap: anywhere; color: #8bc7ff; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
+    .payload {
+      overflow-wrap: anywhere;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      background: #0c1118;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #25313e;
+    }
+    .empty { padding: 32px 18px; text-align: center; }
+
+    .custom-pub {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr auto;
+      gap: 8px;
+    }
+
+    @media (max-width: 900px) {
+      .layout-grid { grid-template-columns: 1fr; }
+      .connection { grid-template-columns: 1fr 1fr; }
+      .connection .field:first-child, .connection button { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 560px) {
+      .controls-grid { grid-template-columns: 1fr; }
+      .custom-pub { grid-template-columns: 1fr; }
+      .event { grid-template-columns: 1fr; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">MQTT · Panel de Control y Visor de Suscripción</div>
+    <h1>Hogar Inteligente MQTT</h1>
+    <p class="intro">Controla los dispositivos publicando en <code>hogar/...</code> y visualiza en tiempo real todos los mensajes de la suscripción.</p>
+  </header>
+
+  <main>
+    <!-- Panel de Conexión -->
+    <section class="panel" aria-label="Configuración de conexión">
+      <form class="connection" id="connection-form">
+        <div class="field">
+          <label for="broker-url">Broker WebSocket (WSS)</label>
+          <input id="broker-url" name="broker-url" type="text" required placeholder="wss://...:8084/mqtt">
+        </div>
+        <div class="field">
+          <label for="username">Usuario</label>
+          <input id="username" name="username" type="text" autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input id="password" name="password" type="password" autocomplete="current-password">
+        </div>
+        <div class="field">
+          <label for="client-id">Client ID</label>
+          <input id="client-id" name="client-id" type="text" required>
+        </div>
+        <button id="connect-button" type="submit">Conectar</button>
+      </form>
+      <div class="connection-info">
+        <span class="status" id="connection-status" data-state="disconnected" role="status" aria-live="polite">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="status-label">Desconectado</span>
+        </span>
+        <div class="port-shortcuts">
+          <span>Puerto EMQX:</span>
+          <button type="button" class="chip" id="btn-port-8084">Usar :8084 (WebSocket TLS)</button>
+          <button type="button" class="chip" id="btn-port-8884">Usar :8884</button>
+          <button type="button" class="chip" id="btn-random-id">ID único</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="layout-grid">
+      <!-- Columna Izquierda: Controles -->
+      <section aria-label="Controles del hogar">
+        <div class="section-heading">
+          <h2>Controles del Hogar</h2>
+          <span class="count">Publicación directa</span>
+        </div>
+
+        <div class="controls-grid">
+          <!-- Living Luz -->
+          <div class="card">
+            <div>
+              <div class="card-header">
+                <span class="card-title">💡 Living - Luz</span>
+                <span class="badge" id="state-luz">sin datos</span>
+              </div>
+              <div class="card-topic">hogar/living/luz/set</div>
+            </div>
+            <div class="btn-row">
+              <button type="button" data-pub-topic="hogar/living/luz/set" data-pub-payload="on">Encender</button>
+              <button type="button" class="btn-secondary" data-pub-topic="hogar/living/luz/set" data-pub-payload="off">Apagar</button>
+            </div>
+          </div>
+
+          <!-- Puerta Principal -->
+          <div class="card">
+            <div>
+              <div class="card-header">
+                <span class="card-title">🚪 Puerta Principal</span>
+                <span class="badge" id="state-puerta">sin datos</span>
+              </div>
+              <div class="card-topic">hogar/puerta/principal/set</div>
+            </div>
+            <div class="btn-row">
+              <button type="button" data-pub-topic="hogar/puerta/principal/set" data-pub-payload="open">Abrir</button>
+              <button type="button" class="btn-secondary" data-pub-topic="hogar/puerta/principal/set" data-pub-payload="close">Cerrar</button>
+            </div>
+          </div>
+
+          <!-- Alarma -->
+          <div class="card">
+            <div>
+              <div class="card-header">
+                <span class="card-title">🚨 Alarma</span>
+                <span class="badge" id="state-alarma">sin datos</span>
+              </div>
+              <div class="card-topic">hogar/alarma/set</div>
+            </div>
+            <div class="btn-row">
+              <button type="button" class="btn-danger" data-pub-topic="hogar/alarma/set" data-pub-payload="enabled">Activar</button>
+              <button type="button" class="btn-secondary" data-pub-topic="hogar/alarma/set" data-pub-payload="disabled">Desactivar</button>
+            </div>
+          </div>
+
+          <!-- TV Living -->
+          <div class="card">
+            <div>
+              <div class="card-header">
+                <span class="card-title">📺 TV Living</span>
+                <span class="badge" id="state-tv">sin datos</span>
+              </div>
+              <div class="card-topic">hogar/living/tv/set</div>
+            </div>
+            <div class="btn-row">
+              <button type="button" data-pub-topic="hogar/living/tv/set" data-pub-payload="on">Encender</button>
+              <button type="button" class="btn-secondary" data-pub-topic="hogar/living/tv/set" data-pub-payload="off">Apagar</button>
+            </div>
+          </div>
+
+          <!-- Termostato -->
+          <div class="card full-width">
+            <div>
+              <div class="card-header">
+                <span class="card-title">🌡️ Termostato</span>
+                <span class="badge" id="state-temp">22°C</span>
+              </div>
+              <div class="card-topic">hogar/clima/temperatura/set</div>
+            </div>
+            <div class="thermostat-row">
+              <input id="temp-slider" type="range" min="16" max="30" value="22">
+              <span class="temp-display" id="temp-value">22°C</span>
+              <button type="button" id="btn-set-temp">Establecer</button>
+            </div>
+          </div>
+
+          <!-- Publicador Personalizado -->
+          <div class="card full-width">
+            <div>
+              <div class="card-header">
+                <span class="card-title">📤 Publicar mensaje personalizado</span>
+              </div>
+            </div>
+            <form class="custom-pub" id="custom-pub-form">
+              <input id="custom-topic" type="text" value="hogar/living/luz/set" placeholder="Tópico (ej. hogar/living/luz/set)" required>
+              <input id="custom-payload" type="text" value="on" placeholder="Mensaje / Payload" required>
+              <button type="submit">Publicar</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- Columna Derecha: Visor de Suscripción -->
+      <section aria-label="Visor de suscripción">
+        <div class="section-heading">
+          <h2>Visor de Suscripción</h2>
+          <div>
+            <span class="count" id="message-count">0 mensajes</span>
+            <button type="button" class="chip" id="btn-clear-feed" style="margin-left:8px;">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <form class="sub-bar" id="sub-form">
+            <input id="sub-topic-input" type="text" value="hogar/#" placeholder="Tópico a suscribir (ej. hogar/#)" required>
+            <button type="submit">Suscribir</button>
+          </form>
+
+          <div class="sub-tags" id="sub-tags"></div>
+
+          <div class="feed" id="event-feed" aria-live="polite">
+            <div class="empty" id="empty-state">Conéctate al broker para ver y controlar la suscripción en vivo.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <p class="hint">
+      💡 <strong>Nota sobre EMQX Cloud:</strong> El puerto estándar para WebSockets seguros (`wss://`) en EMQX es <code>8084</code> (mientras que <code>8883</code> es MQTT TLS nativo). Si tienes la app de Android conectada al mismo tiempo, usa el botón <strong>ID único</strong> para evitar que el broker desconecte una sesión al tener el mismo <code>CLIENT_ID</code>.
+    </p>
+  </main>
+
+  <script>
+    const form = document.getElementById("connection-form");
+    const connectButton = document.getElementById("connect-button");
+    const brokerUrlInput = document.getElementById("broker-url");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const clientIdInput = document.getElementById("client-id");
+    const status = document.getElementById("connection-status");
+    const statusLabel = document.getElementById("status-label");
+    const feed = document.getElementById("event-feed");
+    const emptyState = document.getElementById("empty-state");
+    const messageCount = document.getElementById("message-count");
+    const subForm = document.getElementById("sub-form");
+    const subTopicInput = document.getElementById("sub-topic-input");
+    const subTags = document.getElementById("sub-tags");
+
+    const maxEvents = 100;
+    const mqttConfig = window.MQTT_CONFIG || {};
+    let client = null;
+    let totalMessages = 0;
+    const activeSubscriptions = new Set([mqttConfig.topic || "hogar/#"]);
+
+    brokerUrlInput.value = mqttConfig.brokerUrl || "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt";
+    usernameInput.value = mqttConfig.username || "android-username";
+    passwordInput.value = mqttConfig.password || "android-username";
+    clientIdInput.value = mqttConfig.clientId || "android-device";
+
+    const badgeMap = {
+      "hogar/living/luz/set": document.getElementById("state-luz"),
+      "hogar/puerta/principal/set": document.getElementById("state-puerta"),
+      "hogar/alarma/set": document.getElementById("state-alarma"),
+      "hogar/living/tv/set": document.getElementById("state-tv"),
+      "hogar/clima/temperatura/set": document.getElementById("state-temp")
+    };
+
+    function setStatus(state, label) {
+      status.dataset.state = state;
+      statusLabel.textContent = label;
+    }
+
+    function renderSubscriptions() {
+      subTags.innerHTML = "";
+      activeSubscriptions.forEach((topic) => {
+        const tag = document.createElement("span");
+        tag.className = "sub-tag";
+        tag.innerHTML = `<span>📡 ${topic}</span>`;
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.title = "Cancelar suscripción";
+        removeBtn.textContent = "✕";
+        removeBtn.addEventListener("click", () => {
+          if (client && client.connected) {
+            client.unsubscribe(topic);
+          }
+          activeSubscriptions.delete(topic);
+          renderSubscriptions();
+        });
+        tag.appendChild(removeBtn);
+        subTags.appendChild(tag);
+      });
+    }
+
+    function updateDeviceBadge(topic, payload) {
+      const badge = badgeMap[topic];
+      if (!badge) return;
+      const val = payload.trim();
+      badge.textContent = topic.includes("temperatura") ? `${val}°C` : val.toUpperCase();
+      const isPositive = ["on", "open", "enabled"].includes(val.toLowerCase()) || topic.includes("temperatura");
+      badge.classList.toggle("active", isPositive);
+    }
+
+    function showMessage(topic, payload) {
+      if (emptyState.isConnected) {
+        emptyState.remove();
+      }
+
+      updateDeviceBadge(topic, payload);
+
+      const event = document.createElement("article");
+      event.className = "event";
+
+      const time = document.createElement("time");
+      time.dateTime = new Date().toISOString();
+      time.textContent = new Date().toLocaleTimeString();
+
+      const topicElement = document.createElement("div");
+      topicElement.className = "topic";
+      topicElement.textContent = topic;
+
+      const payloadElement = document.createElement("div");
+      payloadElement.className = "payload";
+      payloadElement.textContent = payload;
+
+      event.append(time, topicElement, payloadElement);
+      feed.prepend(event);
+      while (feed.children.length > maxEvents) {
+        feed.lastElementChild.remove();
+      }
+
+      totalMessages += 1;
+      messageCount.textContent = totalMessages + (totalMessages === 1 ? " mensaje" : " mensajes");
+    }
+
+    function publishMessage(topic, payload) {
+      if (!client || !client.connected) {
+        setStatus("error", "No conectado al broker (haz clic en Conectar)");
+        return;
+      }
+      client.publish(topic, String(payload), { qos: 1 }, (err) => {
+        if (err) {
+          console.error("Error al publicar:", err);
+          setStatus("error", "Error al publicar en " + topic);
+        }
+      });
+    }
+
+    function subscribeTopic(topic) {
+      activeSubscriptions.add(topic);
+      renderSubscriptions();
+      if (client && client.connected) {
+        client.subscribe(topic, { qos: 1 }, (err) => {
+          if (err) {
+            setStatus("error", "Error al suscribirse a " + topic);
+            console.error("Error de suscripción:", err);
+          }
+        });
+      }
+    }
+
+    function connectBroker() {
+      if (typeof mqtt === "undefined") {
+        setStatus("error", "No se pudo cargar MQTT.js");
+        return;
+      }
+
+      if (client) {
+        client.end(true);
+      }
+
+      const brokerUrl = brokerUrlInput.value.trim();
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      const clientId = clientIdInput.value.trim();
+
+      connectButton.disabled = true;
+      setStatus("connecting", "Conectando a " + brokerUrl + "…");
+
+      client = mqtt.connect(brokerUrl, {
+        clientId,
+        username,
+        password,
+        clean: true,
+        connectTimeout: 10000,
+        reconnectPeriod: 4000
+      });
+
+      client.on("connect", () => {
+        setStatus("connected", "Conectado (" + clientId + ")");
+        connectButton.disabled = false;
+        connectButton.textContent = "Reconectar";
+        activeSubscriptions.forEach((topic) => {
+          client.subscribe(topic, { qos: 1 }, (error) => {
+            if (error) {
+              setStatus("error", "Error al suscribirse a " + topic);
+              console.error("No se pudo suscribir:", error);
+            }
+          });
+        });
+      });
+
+      client.on("message", (topic, payload) => {
+        showMessage(topic, payload.toString());
+      });
+
+      client.on("reconnect", () => {
+        setStatus("connecting", "Reconectando…");
+      });
+
+      client.on("error", (error) => {
+        setStatus("error", "Error: " + (error.message || "Fallo de conexión"));
+        connectButton.disabled = false;
+        console.error("Error MQTT:", error);
+      });
+
+      client.on("close", () => {
+        if (status.dataset.state !== "error") {
+          setStatus("disconnected", "Desconectado");
+        }
+        connectButton.disabled = false;
+      });
+    }
+
+    // Eventos del formulario de conexión
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      connectBroker();
+    });
+
+    // Atajos de puerto y Client ID
+    document.getElementById("btn-port-8084").addEventListener("click", () => {
+      brokerUrlInput.value = brokerUrlInput.value.replace(/:\d+\//, ":8084/");
+      connectBroker();
+    });
+
+    document.getElementById("btn-port-8884").addEventListener("click", () => {
+      brokerUrlInput.value = brokerUrlInput.value.replace(/:\d+\//, ":8884/");
+      connectBroker();
+    });
+
+    document.getElementById("btn-random-id").addEventListener("click", () => {
+      clientIdInput.value = "android-device-" + Math.floor(100 + Math.random() * 900);
+      connectBroker();
+    });
+
+    // Controles rápidos
+    document.querySelectorAll("[data-pub-topic]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        publishMessage(btn.dataset.pubTopic, btn.dataset.pubPayload);
+      });
+    });
+
+    // Termostato
+    const tempSlider = document.getElementById("temp-slider");
+    const tempValue = document.getElementById("temp-value");
+    tempSlider.addEventListener("input", () => {
+      tempValue.textContent = tempSlider.value + "°C";
+    });
+    document.getElementById("btn-set-temp").addEventListener("click", () => {
+      publishMessage("hogar/clima/temperatura/set", tempSlider.value);
+    });
+
+    // Publicador personalizado
+    document.getElementById("custom-pub-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const topic = document.getElementById("custom-topic").value.trim();
+      const payload = document.getElementById("custom-payload").value;
+      if (topic) publishMessage(topic, payload);
+    });
+
+    // Suscripción nueva
+    subForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const topic = subTopicInput.value.trim();
+      if (topic) {
+        subscribeTopic(topic);
+      }
+    });
+
+    // Limpiar visor
+    document.getElementById("btn-clear-feed").addEventListener("click", () => {
+      feed.innerHTML = "";
+      feed.appendChild(emptyState);
+      emptyState.textContent = "Historial limpiado. Esperando nuevos mensajes…";
+      totalMessages = 0;
+      messageCount.textContent = "0 mensajes";
+    });
+
+    // Inicializar etiquetas y conectar automáticamente al abrir
+    renderSubscriptions();
+    connectBroker();
+  </script>
+</body>
+</html>

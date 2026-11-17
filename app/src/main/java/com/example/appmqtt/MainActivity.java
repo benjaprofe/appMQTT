@@ -23,9 +23,10 @@ import info.mqtt.android.service.MqttAndroidClient;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private static final String MQTT_BROKER_URL = "wss://__URL__:8884/mqtt";
-    private static final String MQTT_USERNAME = "______";
-    private static final String MQTT_PASSWORD = "______";
+    private static final String MQTT_BROKER_URL = "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8884/mqtt";
+    private static final String CLIENT_ID = "android-device";
+    private static final String MQTT_USERNAME = "android-username";
+    private static final String MQTT_PASSWORD = "android-username";
 
     private MqttAndroidClient client;
     private TextView statusTextView;
@@ -44,8 +45,7 @@ public class MainActivity extends AppCompatActivity {
         setupButtons();
         setupSlider();
 
-        String clientId = "AndroidClient_" + System.currentTimeMillis();
-        client = new MqttAndroidClient(getApplicationContext(), MQTT_BROKER_URL, clientId, Ack.AUTO_ACK);
+        client = new MqttAndroidClient(getApplicationContext(), MQTT_BROKER_URL, CLIENT_ID, Ack.AUTO_ACK);
 
         connectToMqttBroker();
     }
