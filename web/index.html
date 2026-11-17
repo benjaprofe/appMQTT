@@ -1,645 +1,717 @@
 <!doctype html>
 <html lang="es" class="dark">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sistema MQTT · Control y Monitor</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- MQTT.js -->
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <script src="config.local.js"></script>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-slate-950">
 
-  <!-- Barra Superior de Navegación y Estado del Sistema -->
-  <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur border-b border-slate-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl">
-          🏠
-        </div>
-        <div>
-          <span class="text-xs font-bold uppercase tracking-widest text-emerald-400 block">Hogar Inteligente MQTT</span>
-          <h1 class="text-lg sm:text-xl font-bold text-white">Centro de Control y Monitor en Vivo</h1>
-        </div>
-      </div>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sistema MQTT · Control y Monitor</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MQTT.js -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="config.local.js"></script>
+  </head>
 
-      <!-- Selector de Vistas (Paralelo / Página Control / Página Monitor) -->
-      <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm font-semibold">
-        <button type="button" data-view="split" class="view-tab px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 transition">
-          ⚡ Vista Paralela (Ambas)
-        </button>
-        <button type="button" data-view="control" class="view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
-          🎛️ Página 1: Control
-        </button>
-        <button type="button" data-view="monitor" class="view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
-          🖥️ Página 2: Monitor
-        </button>
-      </div>
+  <body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-slate-950">
 
-      <!-- Indicador de Sistema Conectado -->
-      <div class="flex items-center gap-3">
-        <div id="connection-badge" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs sm:text-sm font-semibold">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]"></span>
-          <span id="status-label">✅ Sistema Conectado</span>
-        </div>
-        <button type="button" id="toggle-config-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
-          ⚙️ Broker
-        </button>
-      </div>
-    </div>
-
-    <!-- Panel desplegable de Configuración MQTT -->
-    <div id="config-drawer" class="hidden border-t border-slate-800 bg-slate-900/95">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-        <form id="connection-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-          <div class="lg:col-span-2">
-            <label for="broker-url" class="block text-xs font-semibold text-slate-400 mb-1">Broker WebSocket (WSS)</label>
-            <input id="broker-url" type="text" required class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+    <!-- Barra Superior de Navegación y Estado del Sistema -->
+    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur border-b border-slate-800">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl">
+            🏠
           </div>
           <div>
-            <label for="username" class="block text-xs font-semibold text-slate-400 mb-1">Usuario</label>
-            <input id="username" type="text" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+            <span class="text-xs font-bold uppercase tracking-widest text-emerald-400 block">Hogar Inteligente MQTT</span>
+            <h1 class="text-lg sm:text-xl font-bold text-white">Centro de Control y Monitor en Vivo</h1>
           </div>
-          <div>
-            <label for="password" class="block text-xs font-semibold text-slate-400 mb-1">Contraseña</label>
-            <input id="password" type="password" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+        </div>
+
+        <!-- Selector de Vistas (Paralelo / Página Control / Página Monitor) -->
+        <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm font-semibold">
+          <button type="button" data-view="split" class="view-tab px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 transition">
+            ⚡ Vista Paralela (Ambas)
+          </button>
+          <button type="button" data-view="control" class="view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+            🎛️ Página 1: Control
+          </button>
+          <button type="button" data-view="monitor" class="view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+            🖥️ Página 2: Monitor
+          </button>
+        </div>
+
+        <!-- Indicador de Sistema Conectado -->
+        <div class="flex items-center gap-3">
+          <div id="connection-badge" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-semibold transition-all">
+            <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="status-label">⏳ Conectando...</span>
           </div>
-          <div class="flex gap-2">
-            <div class="flex-1">
-              <label for="client-id" class="block text-xs font-semibold text-slate-400 mb-1">Client ID</label>
-              <input id="client-id" type="text" required class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+          <button type="button" id="toggle-config-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
+            ⚙️ Broker
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel de Configuración MQTT (Siempre visible para conectar y ver estado) -->
+      <div id="config-drawer" class="border-t border-slate-800 bg-slate-900/95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <form id="connection-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+            <div class="lg:col-span-2">
+              <label for="broker-url" class="block text-xs font-semibold text-slate-400 mb-1">Broker WebSocket (WSS)</label>
+              <input id="broker-url" type="text" required class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
             </div>
-            <button id="connect-button" type="submit" class="self-end px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition">
-              Conectar
-            </button>
+            <div>
+              <label for="username" class="block text-xs font-semibold text-slate-400 mb-1">Usuario</label>
+              <input id="username" type="text" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+            </div>
+            <div>
+              <label for="password" class="block text-xs font-semibold text-slate-400 mb-1">Contraseña</label>
+              <input id="password" type="password" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+            </div>
+            <div class="flex gap-2">
+              <div class="flex-1">
+                <label for="client-id" class="block text-xs font-semibold text-slate-400 mb-1">Client ID</label>
+                <input id="client-id" type="text" required class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+              </div>
+              <button id="connect-button" type="submit" class="self-end px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition">
+                Conectar
+              </button>
+            </div>
+          </form>
+          <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            <span>Atajos EMQX:</span>
+            <button type="button" id="btn-port-8084" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700">Puerto :8084 (WSS)</button>
+            <button type="button" id="btn-port-8884" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700">Puerto :8884</button>
+            <button type="button" id="btn-random-id" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700">Generar Client ID único</button>
           </div>
-        </form>
-        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-          <span>Atajos EMQX:</span>
-          <button type="button" id="btn-port-8084" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700">Puerto :8084 (WSS)</button>
-          <button type="button" id="btn-port-8884" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700">Puerto :8884</button>
-          <button type="button" id="btn-random-id" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700">Generar Client ID único</button>
         </div>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- Contenedor Principal de las 2 Páginas Paralelas -->
-  <main id="pages-container" class="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    <!-- Contenedor Principal de las 2 Páginas Paralelas -->
+    <main id="pages-container" class="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-    <!-- ==========================================
+      <!-- ==========================================
          PÁGINA 1: CONTROL DEL HOGAR (PUBLICADOR)
          ========================================== -->
-    <section id="page-control" class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col gap-5">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-        <div>
-          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Página 1 · Emisor MQTT</span>
-          <h2 class="text-xl font-bold text-white flex items-center gap-2 mt-0.5">🎛️ Panel de Control</h2>
-        </div>
-        <span class="px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-          PUBLISH → hogar/...
-        </span>
-      </div>
-
-      <!-- Grid de tarjetas de control -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-        <!-- Living - Luz -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
+      <section id="page-control" class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col gap-5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
           <div>
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-white text-base">💡 Living - Luz</span>
-              <span id="ctrl-badge-luz" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">OFF</span>
-            </div>
-            <p class="text-xs font-mono text-sky-400 mt-1">hogar/living/luz/set</p>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Página 1 · Emisor MQTT</span>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2 mt-0.5">🎛️ Panel de Control</h2>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" data-pub-topic="hogar/living/luz/set" data-pub-payload="on" class="py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
-              Encender
-            </button>
-            <button type="button" data-pub-topic="hogar/living/luz/set" data-pub-payload="off" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
-              Apagar
-            </button>
-          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+            PUBLISH → hogar/...
+          </span>
         </div>
 
-        <!-- Puerta Principal -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
-          <div>
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-white text-base">🚪 Puerta Principal</span>
-              <span id="ctrl-badge-puerta" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">CLOSE</span>
-            </div>
-            <p class="text-xs font-mono text-sky-400 mt-1">hogar/puerta/principal/set</p>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" data-pub-topic="hogar/puerta/principal/set" data-pub-payload="open" class="py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
-              Abrir
-            </button>
-            <button type="button" data-pub-topic="hogar/puerta/principal/set" data-pub-payload="close" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
-              Cerrar
-            </button>
-          </div>
-        </div>
+        <!-- Grid de tarjetas de control -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-        <!-- Alarma -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
-          <div>
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-white text-base">🚨 Alarma</span>
-              <span id="ctrl-badge-alarma" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">DISABLED</span>
-            </div>
-            <p class="text-xs font-mono text-sky-400 mt-1">hogar/alarma/set</p>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" data-pub-topic="hogar/alarma/set" data-pub-payload="enabled" class="py-2 px-3 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-bold text-sm transition active:scale-95">
-              Activar
-            </button>
-            <button type="button" data-pub-topic="hogar/alarma/set" data-pub-payload="disabled" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
-              Desactivar
-            </button>
-          </div>
-        </div>
-
-        <!-- TV Living -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
-          <div>
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-white text-base">📺 TV Living</span>
-              <span id="ctrl-badge-tv" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">OFF</span>
-            </div>
-            <p class="text-xs font-mono text-sky-400 mt-1">hogar/living/tv/set</p>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" data-pub-topic="hogar/living/tv/set" data-pub-payload="on" class="py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
-              Encender
-            </button>
-            <button type="button" data-pub-topic="hogar/living/tv/set" data-pub-payload="off" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
-              Apagar
-            </button>
-          </div>
-        </div>
-
-        <!-- Termostato -->
-        <div class="sm:col-span-2 bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
-          <div class="flex items-center justify-between">
+          <!-- Living - Luz -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
             <div>
-              <span class="font-bold text-white text-base">🌡️ Termostato Clima</span>
-              <p class="text-xs font-mono text-sky-400">hogar/clima/temperatura/set</p>
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-base">💡 Living - Luz</span>
+                <span id="ctrl-badge-luz" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">OFF</span>
+              </div>
+              <p class="text-xs font-mono text-sky-400 mt-1">hogar/living/luz/set</p>
             </div>
-            <span id="temp-value" class="text-2xl font-extrabold text-emerald-400">22°C</span>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" data-pub-topic="hogar/living/luz/set" data-pub-payload="on"
+                class="py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
+                Encender
+              </button>
+              <button type="button" data-pub-topic="hogar/living/luz/set" data-pub-payload="off"
+                class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
+                Apagar
+              </button>
+            </div>
           </div>
-          <div class="flex items-center gap-3">
-            <span class="text-xs text-slate-400 font-mono">16°C</span>
-            <input id="temp-slider" type="range" min="16" max="30" value="22" class="flex-1 accent-emerald-400 cursor-pointer">
-            <span class="text-xs text-slate-400 font-mono">30°C</span>
-            <button type="button" id="btn-set-temp" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
-              Establecer
-            </button>
+
+          <!-- Puerta Principal -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-base">🚪 Puerta Principal</span>
+                <span id="ctrl-badge-puerta" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">CLOSE</span>
+              </div>
+              <p class="text-xs font-mono text-sky-400 mt-1">hogar/puerta/principal/set</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" data-pub-topic="hogar/puerta/principal/set" data-pub-payload="open"
+                class="py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
+                Abrir
+              </button>
+              <button type="button" data-pub-topic="hogar/puerta/principal/set" data-pub-payload="close"
+                class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
+                Cerrar
+              </button>
+            </div>
           </div>
+
+          <!-- Alarma -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-base">🚨 Alarma</span>
+                <span id="ctrl-badge-alarma" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">DISABLED</span>
+              </div>
+              <p class="text-xs font-mono text-sky-400 mt-1">hogar/alarma/set</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" data-pub-topic="hogar/alarma/set" data-pub-payload="enabled"
+                class="py-2 px-3 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-bold text-sm transition active:scale-95">
+                Activar
+              </button>
+              <button type="button" data-pub-topic="hogar/alarma/set" data-pub-payload="disabled"
+                class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
+                Desactivar
+              </button>
+            </div>
+          </div>
+
+          <!-- TV Living -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-base">📺 TV Living</span>
+                <span id="ctrl-badge-tv" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">OFF</span>
+              </div>
+              <p class="text-xs font-mono text-sky-400 mt-1">hogar/living/tv/set</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" data-pub-topic="hogar/living/tv/set" data-pub-payload="on"
+                class="py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
+                Encender
+              </button>
+              <button type="button" data-pub-topic="hogar/living/tv/set" data-pub-payload="off"
+                class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
+                Apagar
+              </button>
+            </div>
+          </div>
+
+          <!-- Termostato -->
+          <div class="sm:col-span-2 bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="font-bold text-white text-base">🌡️ Termostato Clima</span>
+                <p class="text-xs font-mono text-sky-400">hogar/clima/temperatura/set</p>
+              </div>
+              <span id="temp-value" class="text-2xl font-extrabold text-emerald-400">22°C</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-slate-400 font-mono">16°C</span>
+              <input id="temp-slider" type="range" min="16" max="30" value="22" class="flex-1 accent-emerald-400 cursor-pointer">
+              <span class="text-xs text-slate-400 font-mono">30°C</span>
+              <button type="button" id="btn-set-temp" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
+                Establecer
+              </button>
+            </div>
+          </div>
+
+          <!-- Publicador libre -->
+          <div class="sm:col-span-2 bg-slate-950/80 border border-slate-800 rounded-xl p-4">
+            <span class="font-bold text-white text-sm block mb-2">📤 Enviar comando personalizado</span>
+            <form id="custom-pub-form" class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+              <input id="custom-topic" type="text" value="hogar/living/luz/set" placeholder="Tópico" required
+                class="sm:col-span-2 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-sky-300 focus:border-emerald-400 focus:outline-none">
+              <input id="custom-payload" type="text" value="on" placeholder="Payload" required
+                class="sm:col-span-2 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:border-emerald-400 focus:outline-none">
+              <button type="submit" class="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition">
+                Publicar
+              </button>
+            </form>
+          </div>
+
         </div>
+      </section>
 
-        <!-- Publicador libre -->
-        <div class="sm:col-span-2 bg-slate-950/80 border border-slate-800 rounded-xl p-4">
-          <span class="font-bold text-white text-sm block mb-2">📤 Enviar comando personalizado</span>
-          <form id="custom-pub-form" class="grid grid-cols-1 sm:grid-cols-5 gap-2">
-            <input id="custom-topic" type="text" value="hogar/living/luz/set" placeholder="Tópico" required class="sm:col-span-2 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-sky-300 focus:border-emerald-400 focus:outline-none">
-            <input id="custom-payload" type="text" value="on" placeholder="Payload" required class="sm:col-span-2 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:border-emerald-400 focus:outline-none">
-            <button type="submit" class="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition">
-              Publicar
-            </button>
-          </form>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ==========================================
+      <!-- ==========================================
          PÁGINA 2: MONITOR Y VISOR DE SUSCRIPCIÓN
          ========================================== -->
-    <section id="page-monitor" class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col gap-5">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+      <section id="page-monitor" class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col gap-5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Página 2 · Receptor en Tiempo Real</span>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2 mt-0.5">🖥️ Monitor y Visor de Suscripción</h2>
+          </div>
+          <span id="monitor-last-update" class="px-3 py-1 rounded-full text-xs font-mono bg-sky-500/10 text-sky-300 border border-sky-500/30">
+            SUBSCRIBE ← hogar/#
+          </span>
+        </div>
+
+        <!-- Tarjetas del Monitor de Estado en Vivo -->
         <div>
-          <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Página 2 · Receptor en Tiempo Real</span>
-          <h2 class="text-xl font-bold text-white flex items-center gap-2 mt-0.5">🖥️ Monitor y Visor de Suscripción</h2>
-        </div>
-        <span id="monitor-last-update" class="px-3 py-1 rounded-full text-xs font-mono bg-sky-500/10 text-sky-300 border border-sky-500/30">
-          SUBSCRIBE ← hogar/#
-        </span>
-      </div>
-
-      <!-- Tarjetas del Monitor de Estado en Vivo -->
-      <div>
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Estado en vivo de dispositivos</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <!-- Monitor Luz -->
-          <div id="mon-card-luz" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xl">💡</span>
-              <span id="mon-led-luz" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
-            </div>
-            <div class="text-xs text-slate-400 font-medium">Living - Luz</div>
-            <div id="mon-val-luz" class="text-base font-extrabold text-white mt-0.5">Apagada</div>
-            <div id="mon-time-luz" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
-          </div>
-
-          <!-- Monitor Puerta -->
-          <div id="mon-card-puerta" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xl">🚪</span>
-              <span id="mon-led-puerta" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
-            </div>
-            <div class="text-xs text-slate-400 font-medium">Puerta Principal</div>
-            <div id="mon-val-puerta" class="text-base font-extrabold text-white mt-0.5">Cerrada</div>
-            <div id="mon-time-puerta" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
-          </div>
-
-          <!-- Monitor Alarma -->
-          <div id="mon-card-alarma" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xl">🚨</span>
-              <span id="mon-led-alarma" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
-            </div>
-            <div class="text-xs text-slate-400 font-medium">Alarma</div>
-            <div id="mon-val-alarma" class="text-base font-extrabold text-white mt-0.5">Desactivada</div>
-            <div id="mon-time-alarma" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
-          </div>
-
-          <!-- Monitor TV -->
-          <div id="mon-card-tv" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xl">📺</span>
-              <span id="mon-led-tv" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
-            </div>
-            <div class="text-xs text-slate-400 font-medium">TV Living</div>
-            <div id="mon-val-tv" class="text-base font-extrabold text-white mt-0.5">Apagada</div>
-            <div id="mon-time-tv" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
-          </div>
-
-          <!-- Monitor Termostato -->
-          <div id="mon-card-temp" class="col-span-2 sm:col-span-2 bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-3.5 transition-all flex items-center justify-between">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="text-xl">🌡️</span>
-                <span class="text-xs text-emerald-300 font-semibold uppercase tracking-wider">Termostato Clima</span>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Estado en vivo de dispositivos</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <!-- Monitor Luz -->
+            <div id="mon-card-luz" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xl">💡</span>
+                <span id="mon-led-luz" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
               </div>
-              <div id="mon-val-temp" class="text-2xl font-extrabold text-white mt-1">22 °C</div>
-              <div id="mon-time-temp" class="text-[11px] font-mono text-emerald-300/70 mt-0.5">hogar/clima/temperatura/set</div>
+              <div class="text-xs text-slate-400 font-medium">Living - Luz</div>
+              <div id="mon-val-luz" class="text-base font-extrabold text-white mt-0.5">Apagada</div>
+              <div id="mon-time-luz" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
             </div>
-            <span class="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]"></span>
+
+            <!-- Monitor Puerta -->
+            <div id="mon-card-puerta" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xl">🚪</span>
+                <span id="mon-led-puerta" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+              </div>
+              <div class="text-xs text-slate-400 font-medium">Puerta Principal</div>
+              <div id="mon-val-puerta" class="text-base font-extrabold text-white mt-0.5">Cerrada</div>
+              <div id="mon-time-puerta" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
+            </div>
+
+            <!-- Monitor Alarma -->
+            <div id="mon-card-alarma" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xl">🚨</span>
+                <span id="mon-led-alarma" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+              </div>
+              <div class="text-xs text-slate-400 font-medium">Alarma</div>
+              <div id="mon-val-alarma" class="text-base font-extrabold text-white mt-0.5">Desactivada</div>
+              <div id="mon-time-alarma" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
+            </div>
+
+            <!-- Monitor TV -->
+            <div id="mon-card-tv" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xl">📺</span>
+                <span id="mon-led-tv" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+              </div>
+              <div class="text-xs text-slate-400 font-medium">TV Living</div>
+              <div id="mon-val-tv" class="text-base font-extrabold text-white mt-0.5">Apagada</div>
+              <div id="mon-time-tv" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
+            </div>
+
+            <!-- Monitor Termostato -->
+            <div id="mon-card-temp" class="col-span-2 sm:col-span-2 bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-3.5 transition-all flex items-center justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xl">🌡️</span>
+                  <span class="text-xs text-emerald-300 font-semibold uppercase tracking-wider">Termostato Clima</span>
+                </div>
+                <div id="mon-val-temp" class="text-2xl font-extrabold text-white mt-1">22 °C</div>
+                <div id="mon-time-temp" class="text-[11px] font-mono text-emerald-300/70 mt-0.5">hogar/clima/temperatura/set</div>
+              </div>
+              <span class="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]"></span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Visor de Suscripción (Tópicos y Consola de Mensajes) -->
-      <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-        <!-- Barra de suscripción -->
-        <div class="p-3 bg-slate-900/80 border-b border-slate-800 flex flex-col gap-2.5">
-          <form id="sub-form" class="flex gap-2">
-            <input id="sub-topic-input" type="text" value="hogar/#" placeholder="Suscribir a tópico (ej. hogar/#)" required class="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs font-mono text-sky-300 focus:border-sky-400 focus:outline-none">
-            <button type="submit" class="px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition">
-              + Suscribir
-            </button>
-            <button type="button" id="btn-clear-feed" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition">
-              Limpiar
-            </button>
-          </form>
+        <!-- Visor de Suscripción (Tópicos y Consola de Mensajes) -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+          <!-- Barra de suscripción -->
+          <div class="p-3 bg-slate-900/80 border-b border-slate-800 flex flex-col gap-2.5">
+            <form id="sub-form" class="flex gap-2">
+              <input id="sub-topic-input" type="text" value="hogar/#" placeholder="Suscribir a tópico (ej. hogar/#)" required
+                class="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs font-mono text-sky-300 focus:border-sky-400 focus:outline-none">
+              <button type="submit" class="px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition">
+                + Suscribir
+              </button>
+              <button type="button" id="btn-clear-feed" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition">
+                Limpiar
+              </button>
+            </form>
 
-          <div class="flex items-center justify-between flex-wrap gap-2">
-            <div id="sub-tags" class="flex flex-wrap gap-1.5"></div>
-            <span id="message-count" class="text-xs font-mono text-slate-400">0 mensajes</span>
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div id="sub-tags" class="flex flex-wrap gap-1.5"></div>
+              <span id="message-count" class="text-xs font-mono text-slate-400">0 mensajes</span>
+            </div>
+          </div>
+
+          <!-- Lista de mensajes en vivo -->
+          <div id="event-feed" class="divide-y divide-slate-800/80 max-h-72 overflow-y-auto text-xs font-mono">
+            <div id="empty-state" class="p-8 text-center text-slate-500 font-sans text-sm">
+              Escuchando eventos en <code class="text-sky-400">hogar/#</code>. Usa la Página de Control para probar en paralelo.
+            </div>
           </div>
         </div>
+      </section>
 
-        <!-- Lista de mensajes en vivo -->
-        <div id="event-feed" class="divide-y divide-slate-800/80 max-h-72 overflow-y-auto text-xs font-mono">
-          <div id="empty-state" class="p-8 text-center text-slate-500 font-sans text-sm">
-            Escuchando eventos en <code class="text-sky-400">hogar/#</code>. Usa la Página de Control para probar en paralelo.
-          </div>
-        </div>
-      </div>
-    </section>
+    </main>
 
-  </main>
+    <script>
+      const form = document.getElementById("connection-form");
+      const connectButton = document.getElementById("connect-button");
+      const brokerUrlInput = document.getElementById("broker-url");
+      const usernameInput = document.getElementById("username");
+      const passwordInput = document.getElementById("password");
+      const clientIdInput = document.getElementById("client-id");
+      const statusLabel = document.getElementById("status-label");
+      const feed = document.getElementById("event-feed");
+      const emptyState = document.getElementById("empty-state");
+      const messageCount = document.getElementById("message-count");
+      const subForm = document.getElementById("sub-form");
+      const subTopicInput = document.getElementById("sub-topic-input");
+      const subTags = document.getElementById("sub-tags");
 
-  <script>
-    const form = document.getElementById("connection-form");
-    const connectButton = document.getElementById("connect-button");
-    const brokerUrlInput = document.getElementById("broker-url");
-    const usernameInput = document.getElementById("username");
-    const passwordInput = document.getElementById("password");
-    const clientIdInput = document.getElementById("client-id");
-    const statusLabel = document.getElementById("status-label");
-    const feed = document.getElementById("event-feed");
-    const emptyState = document.getElementById("empty-state");
-    const messageCount = document.getElementById("message-count");
-    const subForm = document.getElementById("sub-form");
-    const subTopicInput = document.getElementById("sub-topic-input");
-    const subTags = document.getElementById("sub-tags");
+      const maxEvents = 100;
+      const mqttConfig = window.MQTT_CONFIG || {};
+      let client = null;
+      let totalMessages = 0;
+      const activeSubscriptions = new Set([mqttConfig.topic || "hogar/#"]);
 
-    const maxEvents = 100;
-    const mqttConfig = window.MQTT_CONFIG || {};
-    let client = null;
-    let totalMessages = 0;
-    const activeSubscriptions = new Set([mqttConfig.topic || "hogar/#"]);
+      const candidateUrls = [
+        "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt"
+      ];
+      let currentUrlIndex = 0;
 
-    brokerUrlInput.value = mqttConfig.brokerUrl || "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt";
-    usernameInput.value = mqttConfig.username || "android-username";
-    passwordInput.value = mqttConfig.password || "android-username";
-    clientIdInput.value = mqttConfig.clientId || "android-device";
+      // En EMQX Cloud, el puerto 8084 es el que está abierto para WSS (8884 da connack timeout)
+      const configuredUrl = (mqttConfig.brokerUrl || candidateUrls[0]).replace(":8884", ":8084");
+      brokerUrlInput.value = configuredUrl;
+      usernameInput.value = mqttConfig.username || "android-username";
+      passwordInput.value = mqttConfig.password || "android-username";
+      clientIdInput.value = mqttConfig.clientId || "android-device-web";
 
-    // Mostrar/Ocultar configuración del broker
-    document.getElementById("toggle-config-btn").addEventListener("click", () => {
-      document.getElementById("config-drawer").classList.toggle("hidden");
-    });
-
-    // Conmutador entre Vista Paralela, solo Página Control o solo Página Monitor
-    const pagesContainer = document.getElementById("pages-container");
-    const pageControl = document.getElementById("page-control");
-    const pageMonitor = document.getElementById("page-monitor");
-    const viewTabs = document.querySelectorAll(".view-tab");
-
-    viewTabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const view = tab.dataset.view;
-        viewTabs.forEach((t) => {
-          t.className = "view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition";
-        });
-        tab.className = "view-tab px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 transition";
-
-        if (view === "split") {
-          pagesContainer.classList.add("lg:grid-cols-2");
-          pageControl.classList.remove("hidden");
-          pageMonitor.classList.remove("hidden");
-        } else if (view === "control") {
-          pagesContainer.classList.remove("lg:grid-cols-2");
-          pageControl.classList.remove("hidden");
-          pageMonitor.classList.add("hidden");
-        } else if (view === "monitor") {
-          pagesContainer.classList.remove("lg:grid-cols-2");
-          pageControl.classList.add("hidden");
-          pageMonitor.classList.remove("hidden");
-        }
+      // Mostrar/Ocultar configuración del broker
+      document.getElementById("toggle-config-btn").addEventListener("click", () => {
+        document.getElementById("config-drawer").classList.toggle("hidden");
       });
-    });
 
-    function setStatus(label) {
-      statusLabel.textContent = label;
-    }
+      // Conmutador entre Vista Paralela, solo Página Control o solo Página Monitor
+      const pagesContainer = document.getElementById("pages-container");
+      const pageControl = document.getElementById("page-control");
+      const pageMonitor = document.getElementById("page-monitor");
+      const viewTabs = document.querySelectorAll(".view-tab");
 
-    function renderSubscriptions() {
-      subTags.innerHTML = "";
-      activeSubscriptions.forEach((topic) => {
-        const tag = document.createElement("span");
-        tag.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30";
-        tag.innerHTML = `<span>📡 ${topic}</span>`;
-        const removeBtn = document.createElement("button");
-        removeBtn.type = "button";
-        removeBtn.className = "hover:text-white ml-1";
-        removeBtn.textContent = "✕";
-        removeBtn.addEventListener("click", () => {
-          if (client && client.connected) {
-            client.unsubscribe(topic);
+      viewTabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const view = tab.dataset.view;
+          viewTabs.forEach((t) => {
+            t.className = "view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition";
+          });
+          tab.className = "view-tab px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 transition";
+
+          if (view === "split") {
+            pagesContainer.classList.add("lg:grid-cols-2");
+            pageControl.classList.remove("hidden");
+            pageMonitor.classList.remove("hidden");
+          } else if (view === "control") {
+            pagesContainer.classList.remove("lg:grid-cols-2");
+            pageControl.classList.remove("hidden");
+            pageMonitor.classList.add("hidden");
+          } else if (view === "monitor") {
+            pagesContainer.classList.remove("lg:grid-cols-2");
+            pageControl.classList.add("hidden");
+            pageMonitor.classList.remove("hidden");
           }
-          activeSubscriptions.delete(topic);
-          renderSubscriptions();
         });
-        tag.appendChild(removeBtn);
-        subTags.appendChild(tag);
       });
-    }
 
-    function styleMonitorCard(cardId, ledId, isActive, isAlert = false) {
-      const card = document.getElementById(cardId);
-      const led = document.getElementById(ledId);
-      if (!card || !led) return;
+      const connectionBadge = document.getElementById("connection-badge");
+      const statusDot = document.getElementById("status-dot");
 
-      if (isAlert && isActive) {
-        card.className = "bg-rose-500/10 border border-rose-500/50 rounded-xl p-3.5 transition-all shadow-[0_0_15px_rgba(244,63,94,0.15)]";
-        led.className = "w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_8px_#fb7185]";
-      } else if (isActive) {
-        card.className = "bg-emerald-500/10 border border-emerald-500/50 rounded-xl p-3.5 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)]";
-        led.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]";
-      } else {
-        card.className = "bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all";
-        led.className = "w-2.5 h-2.5 rounded-full bg-slate-600";
-      }
-    }
-
-    function updateMonitorAndControl(topic, payload) {
-      const val = payload.trim();
-      const lower = val.toLowerCase();
-      const now = new Date().toLocaleTimeString();
-
-      document.getElementById("monitor-last-update").textContent = "Último evento: " + now;
-
-      if (topic === "hogar/living/luz/set") {
-        const on = lower === "on";
-        document.getElementById("ctrl-badge-luz").textContent = val.toUpperCase();
-        document.getElementById("mon-val-luz").textContent = on ? "Encendida" : "Apagada";
-        document.getElementById("mon-time-luz").textContent = "Actualizado " + now;
-        styleMonitorCard("mon-card-luz", "mon-led-luz", on);
-      } else if (topic === "hogar/puerta/principal/set") {
-        const open = lower === "open";
-        document.getElementById("ctrl-badge-puerta").textContent = val.toUpperCase();
-        document.getElementById("mon-val-puerta").textContent = open ? "Abierta" : "Cerrada";
-        document.getElementById("mon-time-puerta").textContent = "Actualizado " + now;
-        styleMonitorCard("mon-card-puerta", "mon-led-puerta", open);
-      } else if (topic === "hogar/alarma/set") {
-        const enabled = lower === "enabled";
-        document.getElementById("ctrl-badge-alarma").textContent = val.toUpperCase();
-        document.getElementById("mon-val-alarma").textContent = enabled ? "Activada" : "Desactivada";
-        document.getElementById("mon-time-alarma").textContent = "Actualizado " + now;
-        styleMonitorCard("mon-card-alarma", "mon-led-alarma", enabled, true);
-      } else if (topic === "hogar/living/tv/set") {
-        const on = lower === "on";
-        document.getElementById("ctrl-badge-tv").textContent = val.toUpperCase();
-        document.getElementById("mon-val-tv").textContent = on ? "Encendida" : "Apagada";
-        document.getElementById("mon-time-tv").textContent = "Actualizado " + now;
-        styleMonitorCard("mon-card-tv", "mon-led-tv", on);
-      } else if (topic === "hogar/clima/temperatura/set") {
-        document.getElementById("temp-value").textContent = `${val}°C`;
-        document.getElementById("temp-slider").value = val;
-        document.getElementById("mon-val-temp").textContent = `${val} °C`;
-        document.getElementById("mon-time-temp").textContent = "Actualizado " + now;
-      }
-    }
-
-    function showMessage(topic, payload) {
-      if (emptyState && emptyState.parentNode) {
-        emptyState.remove();
-      }
-
-      updateMonitorAndControl(topic, payload);
-
-      const row = document.createElement("div");
-      row.className = "px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-900/60 transition";
-
-      const left = document.createElement("div");
-      left.className = "flex items-center gap-2.5 min-w-0";
-
-      const time = document.createElement("span");
-      time.className = "text-slate-500 shrink-0";
-      time.textContent = new Date().toLocaleTimeString();
-
-      const topicEl = document.createElement("span");
-      topicEl.className = "text-sky-400 truncate";
-      topicEl.textContent = topic;
-
-      left.append(time, topicEl);
-
-      const payloadEl = document.createElement("span");
-      payloadEl.className = "px-2.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold shrink-0";
-      payloadEl.textContent = payload;
-
-      row.append(left, payloadEl);
-      feed.prepend(row);
-
-      while (feed.children.length > maxEvents) {
-        feed.lastElementChild.remove();
-      }
-
-      totalMessages += 1;
-      messageCount.textContent = totalMessages + (totalMessages === 1 ? " mensaje" : " mensajes");
-    }
-
-    // Canal paralelo entre pestañas/vistas + MQTT
-    const syncChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("mqtt_hogar_channel") : null;
-    if (syncChannel) {
-      syncChannel.onmessage = (ev) => {
-        if (ev.data && ev.data.topic) {
-          showMessage(ev.data.topic, ev.data.payload);
+      function setStatus(state, label) {
+        statusLabel.textContent = label;
+        if (state === "connected") {
+          connectionBadge.className = "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs sm:text-sm font-semibold transition-all";
+          statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]";
+          connectButton.textContent = "✅ Conectado";
+          connectButton.className = "self-end px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition";
+        } else if (state === "connecting") {
+          connectionBadge.className = "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-semibold transition-all";
+          statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+          connectButton.textContent = "Conectando...";
+        } else if (state === "error") {
+          connectionBadge.className = "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs sm:text-sm font-semibold transition-all";
+          statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-400";
+          connectButton.textContent = "Reintentar";
+        } else {
+          connectionBadge.className = "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs sm:text-sm font-semibold transition-all";
+          statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-400";
+          connectButton.textContent = "Conectar";
         }
-      };
-    }
+      }
 
-    function publishMessage(topic, payload) {
-      const strPayload = String(payload);
-      // Actualiza inmediatamente la vista Monitor en paralelo
-      showMessage(topic, strPayload);
+      function renderSubscriptions() {
+        subTags.innerHTML = "";
+        activeSubscriptions.forEach((topic) => {
+          const tag = document.createElement("span");
+          tag.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30";
+          tag.innerHTML = `<span>📡 ${topic}</span>`;
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "hover:text-white ml-1";
+          removeBtn.textContent = "✕";
+          removeBtn.addEventListener("click", () => {
+            if (client && client.connected) {
+              client.unsubscribe(topic);
+            }
+            activeSubscriptions.delete(topic);
+            renderSubscriptions();
+          });
+          tag.appendChild(removeBtn);
+          subTags.appendChild(tag);
+        });
+      }
+
+      function styleMonitorCard(cardId, ledId, isActive, isAlert = false) {
+        const card = document.getElementById(cardId);
+        const led = document.getElementById(ledId);
+        if (!card || !led) return;
+
+        if (isAlert && isActive) {
+          card.className = "bg-rose-500/10 border border-rose-500/50 rounded-xl p-3.5 transition-all shadow-[0_0_15px_rgba(244,63,94,0.15)]";
+          led.className = "w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_8px_#fb7185]";
+        } else if (isActive) {
+          card.className = "bg-emerald-500/10 border border-emerald-500/50 rounded-xl p-3.5 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)]";
+          led.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]";
+        } else {
+          card.className = "bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all";
+          led.className = "w-2.5 h-2.5 rounded-full bg-slate-600";
+        }
+      }
+
+      function updateMonitorAndControl(topic, payload) {
+        const val = payload.trim();
+        const lower = val.toLowerCase();
+        const now = new Date().toLocaleTimeString();
+
+        document.getElementById("monitor-last-update").textContent = "Último evento: " + now;
+
+        if (topic === "hogar/living/luz/set") {
+          const on = lower === "on";
+          document.getElementById("ctrl-badge-luz").textContent = val.toUpperCase();
+          document.getElementById("mon-val-luz").textContent = on ? "Encendida" : "Apagada";
+          document.getElementById("mon-time-luz").textContent = "Actualizado " + now;
+          styleMonitorCard("mon-card-luz", "mon-led-luz", on);
+        } else if (topic === "hogar/puerta/principal/set") {
+          const open = lower === "open";
+          document.getElementById("ctrl-badge-puerta").textContent = val.toUpperCase();
+          document.getElementById("mon-val-puerta").textContent = open ? "Abierta" : "Cerrada";
+          document.getElementById("mon-time-puerta").textContent = "Actualizado " + now;
+          styleMonitorCard("mon-card-puerta", "mon-led-puerta", open);
+        } else if (topic === "hogar/alarma/set") {
+          const enabled = lower === "enabled";
+          document.getElementById("ctrl-badge-alarma").textContent = val.toUpperCase();
+          document.getElementById("mon-val-alarma").textContent = enabled ? "Activada" : "Desactivada";
+          document.getElementById("mon-time-alarma").textContent = "Actualizado " + now;
+          styleMonitorCard("mon-card-alarma", "mon-led-alarma", enabled, true);
+        } else if (topic === "hogar/living/tv/set") {
+          const on = lower === "on";
+          document.getElementById("ctrl-badge-tv").textContent = val.toUpperCase();
+          document.getElementById("mon-val-tv").textContent = on ? "Encendida" : "Apagada";
+          document.getElementById("mon-time-tv").textContent = "Actualizado " + now;
+          styleMonitorCard("mon-card-tv", "mon-led-tv", on);
+        } else if (topic === "hogar/clima/temperatura/set") {
+          document.getElementById("temp-value").textContent = `${val}°C`;
+          document.getElementById("temp-slider").value = val;
+          document.getElementById("mon-val-temp").textContent = `${val} °C`;
+          document.getElementById("mon-time-temp").textContent = "Actualizado " + now;
+        }
+      }
+
+      function showMessage(topic, payload) {
+        if (emptyState && emptyState.parentNode) {
+          emptyState.remove();
+        }
+
+        updateMonitorAndControl(topic, payload);
+
+        const row = document.createElement("div");
+        row.className = "px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-900/60 transition";
+
+        const left = document.createElement("div");
+        left.className = "flex items-center gap-2.5 min-w-0";
+
+        const time = document.createElement("span");
+        time.className = "text-slate-500 shrink-0";
+        time.textContent = new Date().toLocaleTimeString();
+
+        const topicEl = document.createElement("span");
+        topicEl.className = "text-sky-400 truncate";
+        topicEl.textContent = topic;
+
+        left.append(time, topicEl);
+
+        const payloadEl = document.createElement("span");
+        payloadEl.className = "px-2.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold shrink-0";
+        payloadEl.textContent = payload;
+
+        row.append(left, payloadEl);
+        feed.prepend(row);
+
+        while (feed.children.length > maxEvents) {
+          feed.lastElementChild.remove();
+        }
+
+        totalMessages += 1;
+        messageCount.textContent = totalMessages + (totalMessages === 1 ? " mensaje" : " mensajes");
+      }
+
+      // Canal paralelo entre pestañas/vistas + MQTT
+      const syncChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("mqtt_hogar_channel") : null;
       if (syncChannel) {
-        syncChannel.postMessage({ topic, payload: strPayload });
-      }
-      if (client && client.connected) {
-        client.publish(topic, strPayload, { qos: 1 });
-      }
-    }
-
-    function subscribeTopic(topic) {
-      activeSubscriptions.add(topic);
-      renderSubscriptions();
-      if (client && client.connected) {
-        client.subscribe(topic, { qos: 1 });
-      }
-    }
-
-    function connectBroker() {
-      if (client) {
-        client.end(true);
+        syncChannel.onmessage = (ev) => {
+          if (ev.data && ev.data.topic) {
+            showMessage(ev.data.topic, ev.data.payload);
+          }
+        };
       }
 
-      const brokerUrl = brokerUrlInput.value.trim();
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value;
-      const clientId = clientIdInput.value.trim();
+      function publishMessage(topic, payload) {
+        const strPayload = String(payload);
+        // Actualiza inmediatamente la vista Monitor en paralelo
+        showMessage(topic, strPayload);
+        if (syncChannel) {
+          syncChannel.postMessage({ topic, payload: strPayload });
+        }
+        if (client) {
+          // retain: true permite que cualquier cliente que se suscriba reciba el último estado
+          client.publish(topic, strPayload, { qos: 1, retain: true });
+        }
+      }
 
-      setStatus("✅ Sistema Conectado (" + clientId + ")");
+      function subscribeTopic(topic) {
+        activeSubscriptions.add(topic);
+        renderSubscriptions();
+        if (client && client.connected) {
+          client.subscribe(topic, { qos: 1 });
+        }
+      }
 
-      if (typeof mqtt === "undefined") return;
+      function showSystemEvent(message, isSuccess = true) {
+        if (emptyState && emptyState.parentNode) {
+          emptyState.remove();
+        }
+        const row = document.createElement("div");
+        row.className = isSuccess
+          ? "px-4 py-2.5 flex items-center justify-between gap-3 bg-emerald-500/10 border-l-4 border-emerald-400 text-emerald-300"
+          : "px-4 py-2.5 flex items-center justify-between gap-3 bg-rose-500/10 border-l-4 border-rose-400 text-rose-300";
 
-      client = mqtt.connect(brokerUrl, {
-        clientId,
-        username,
-        password,
-        clean: true,
-        connectTimeout: 10000,
-        reconnectPeriod: 4000
+        const time = document.createElement("span");
+        time.className = "text-xs opacity-75 shrink-0";
+        time.textContent = new Date().toLocaleTimeString();
+
+        const msgEl = document.createElement("span");
+        msgEl.className = "font-semibold truncate";
+        msgEl.textContent = message;
+
+        row.append(time, msgEl);
+        feed.prepend(row);
+      }
+
+      function connectBroker() {
+        if (client) {
+          client.end(true);
+        }
+
+        const brokerUrl = brokerUrlInput.value.trim();
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+        const clientId = clientIdInput.value.trim();
+
+        setStatus("connecting", "⏳ Conectando a " + clientId + "...");
+
+        if (typeof mqtt === "undefined") {
+          setStatus("error", "❌ Error al cargar MQTT.js");
+          return;
+        }
+
+        client = mqtt.connect(brokerUrl, {
+          clientId,
+          username,
+          password,
+          clean: true,
+          connectTimeout: 8000,
+          reconnectPeriod: 4000
+        });
+
+        client.on("connect", () => {
+          setStatus("connected", "✅ Conectado (" + clientId + ")");
+          showSystemEvent("✅ Conectado exitosamente a EMQX como '" + clientId + "' y suscrito a hogar/#", true);
+          activeSubscriptions.forEach((topic) => {
+            client.subscribe(topic, { qos: 1, nl: true });
+          });
+        });
+
+        client.on("message", (topic, payload) => {
+          showMessage(topic, payload.toString());
+        });
+
+        client.on("reconnect", () => {
+          setStatus("connecting", "🔄 Reconectando (" + clientId + ")...");
+        });
+
+        client.on("error", (err) => {
+          console.warn("Error MQTT WSS:", err);
+          setStatus("error", "❌ Error (" + (err.message || "Revisa puerto/credenciales") + ")");
+          showSystemEvent("⚠️ Error de conexión en " + brokerUrl + " (" + (err.message || "Verifica puerto :8084 o :8884") + ")", false);
+        });
+
+        client.on("close", () => {
+          if ( client && !client.connected ) {
+            setStatus("connecting", "🔄 Reconectando...");
+          }
+        });
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        connectBroker();
       });
 
-      client.on("connect", () => {
-        setStatus("✅ Sistema Conectado (" + clientId + ")");
-        activeSubscriptions.forEach((topic) => {
-          client.subscribe(topic, { qos: 1 });
+      document.getElementById("btn-port-8084").addEventListener("click", () => {
+        brokerUrlInput.value = brokerUrlInput.value.replace(/:\d+\//, ":8084/");
+        connectBroker();
+      });
+
+      document.getElementById("btn-port-8884").addEventListener("click", () => {
+        brokerUrlInput.value = brokerUrlInput.value.replace(/:\d+\//, ":8884/");
+        connectBroker();
+      });
+
+      document.getElementById("btn-random-id").addEventListener("click", () => {
+        clientIdInput.value = "android-device-" + Math.floor(100 + Math.random() * 900);
+        connectBroker();
+      });
+
+      document.querySelectorAll("[data-pub-topic]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          publishMessage(btn.dataset.pubTopic, btn.dataset.pubPayload);
         });
       });
 
-      client.on("message", (topic, payload) => {
-        showMessage(topic, payload.toString());
+      const tempSlider = document.getElementById("temp-slider");
+      const tempValue = document.getElementById("temp-value");
+      tempSlider.addEventListener("input", () => {
+        tempValue.textContent = tempSlider.value + "°C";
+      });
+      document.getElementById("btn-set-temp").addEventListener("click", () => {
+        publishMessage("hogar/clima/temperatura/set", tempSlider.value);
       });
 
-      client.on("reconnect", () => {
-        setStatus("✅ Sistema Conectado (" + clientId + ")");
+      document.getElementById("custom-pub-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const topic = document.getElementById("custom-topic").value.trim();
+        const payload = document.getElementById("custom-payload").value;
+        if (topic) publishMessage(topic, payload);
       });
 
-      client.on("error", () => {
-        setStatus("✅ Sistema Conectado (" + clientId + ")");
+      subForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const topic = subTopicInput.value.trim();
+        if (topic) subscribeTopic(topic);
       });
 
-      client.on("close", () => {
-        setStatus("✅ Sistema Conectado (" + clientId + ")");
+      document.getElementById("btn-clear-feed").addEventListener("click", () => {
+        feed.innerHTML = "";
+        feed.appendChild(emptyState);
+        emptyState.textContent = "Historial limpiado. Esperando nuevos mensajes en hogar/#…";
+        totalMessages = 0;
+        messageCount.textContent = "0 mensajes";
       });
-    }
 
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
+      renderSubscriptions();
       connectBroker();
-    });
+    </script>
+  </body>
 
-    document.getElementById("btn-port-8084").addEventListener("click", () => {
-      brokerUrlInput.value = brokerUrlInput.value.replace(/:\d+\//, ":8084/");
-      connectBroker();
-    });
-
-    document.getElementById("btn-port-8884").addEventListener("click", () => {
-      brokerUrlInput.value = brokerUrlInput.value.replace(/:\d+\//, ":8884/");
-      connectBroker();
-    });
-
-    document.getElementById("btn-random-id").addEventListener("click", () => {
-      clientIdInput.value = "android-device-" + Math.floor(100 + Math.random() * 900);
-      connectBroker();
-    });
-
-    document.querySelectorAll("[data-pub-topic]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        publishMessage(btn.dataset.pubTopic, btn.dataset.pubPayload);
-      });
-    });
-
-    const tempSlider = document.getElementById("temp-slider");
-    const tempValue = document.getElementById("temp-value");
-    tempSlider.addEventListener("input", () => {
-      tempValue.textContent = tempSlider.value + "°C";
-    });
-    document.getElementById("btn-set-temp").addEventListener("click", () => {
-      publishMessage("hogar/clima/temperatura/set", tempSlider.value);
-    });
-
-    document.getElementById("custom-pub-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const topic = document.getElementById("custom-topic").value.trim();
-      const payload = document.getElementById("custom-payload").value;
-      if (topic) publishMessage(topic, payload);
-    });
-
-    subForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const topic = subTopicInput.value.trim();
-      if (topic) subscribeTopic(topic);
-    });
-
-    document.getElementById("btn-clear-feed").addEventListener("click", () => {
-      feed.innerHTML = "";
-      feed.appendChild(emptyState);
-      emptyState.textContent = "Historial limpiado. Esperando nuevos mensajes en hogar/#…";
-      totalMessages = 0;
-      messageCount.textContent = "0 mensajes";
-    });
-
-    renderSubscriptions();
-    connectBroker();
-  </script>
-</body>
 </html>

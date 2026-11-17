@@ -27,8 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String MQTT_BROKER_URL = "ssl://h0bc12ce.ala.us-east-1.emqxsl.com:8883";
     private static final String[] FALLBACK_URIS = new String[] {
             "ssl://h0bc12ce.ala.us-east-1.emqxsl.com:8883",
-            "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt",
-            "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8884/mqtt"
+            "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt"
     };
     private static final String CLIENT_ID = "android-device";
     private static final String MQTT_USERNAME = "android-username";
