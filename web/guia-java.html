@@ -5,6 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Guía Práctica Android (Java) · MQTT EMQX</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Highlight.js Tema Monokai Sublime -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai-sublime.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/gradle.min.js"></script>
+  <style>
+    .monokai-window {
+      background: #23241f;
+      border: 1px solid #3e3d32;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .monokai-bar {
+      background: #1b1c18;
+      border-bottom: 1px solid #3e3d32;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .monokai-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .monokai-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .monokai-window pre {
+      margin: 0;
+      background: #23241f !important;
+    }
+    .monokai-window code.hljs {
+      background: #23241f !important;
+      padding: 16px !important;
+      font-size: 12.5px;
+      line-height: 1.6;
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+  </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-slate-950">
 
@@ -86,12 +127,21 @@
       <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="text-base font-bold text-emerald-400">Paso 1: Agregar la librería MQTT en <code class="text-white">app/build.gradle</code></h3>
-          <span class="text-xs font-mono text-slate-400">Gradle</span>
+          <span class="px-2.5 py-0.5 rounded text-xs font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">Gradle / Groovy</span>
         </div>
         <p class="text-sm text-slate-300">
           En el archivo <code class="text-emerald-300">app/build.gradle</code> se declara la dependencia de Paho MQTT compatible con versiones modernas de Android (SDK 24 a 36):
         </p>
-        <pre class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 overflow-x-auto"><code>dependencies {
+        <div class="monokai-window">
+          <div class="monokai-bar">
+            <div class="monokai-dots">
+              <span style="background:#ff5f56"></span>
+              <span style="background:#ffbd2e"></span>
+              <span style="background:#27c93f"></span>
+            </div>
+            <span class="text-[11px] font-mono text-amber-300 font-bold">GRADLE · app/build.gradle</span>
+          </div>
+          <pre><code class="language-gradle">dependencies {
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity
@@ -100,18 +150,28 @@
     // Cliente MQTT para Android (fork actualizado de Eclipse Paho)
     implementation 'com.github.hannesa2:paho.mqtt.android:3.3.5'
 }</code></pre>
+        </div>
       </div>
 
       <!-- Paso 2 -->
       <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="text-base font-bold text-emerald-400">Paso 2: Declarar Permisos y Servicio en <code class="text-white">AndroidManifest.xml</code></h3>
-          <span class="text-xs font-mono text-slate-400">Manifest</span>
+          <span class="px-2.5 py-0.5 rounded text-xs font-mono bg-pink-500/15 text-pink-300 border border-pink-500/30">XML · AndroidManifest</span>
         </div>
         <p class="text-sm text-slate-300">
           Para que Android permita abrir la conexión a Internet y mantener vivo el servicio MQTT en segundo plano, es obligatorio registrar los permisos y el <code class="text-amber-300">&lt;service android:name="info.mqtt.android.service.MqttService" /&gt;</code>:
         </p>
-        <pre class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 overflow-x-auto"><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+        <div class="monokai-window">
+          <div class="monokai-bar">
+            <div class="monokai-dots">
+              <span style="background:#ff5f56"></span>
+              <span style="background:#ffbd2e"></span>
+              <span style="background:#27c93f"></span>
+            </div>
+            <span class="text-[11px] font-mono text-pink-400 font-bold">XML · AndroidManifest.xml</span>
+          </div>
+          <pre><code class="language-xml">&lt;?xml version="1.0" encoding="utf-8"?&gt;
 &lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
 
     &lt;!-- 1. Permisos requeridos por MQTT --&gt;
@@ -128,18 +188,28 @@
         &lt;/activity&gt;
     &lt;/application&gt;
 &lt;/manifest&gt;</code></pre>
+        </div>
       </div>
 
       <!-- Paso 3 -->
       <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="text-base font-bold text-emerald-400">Paso 3: Inicializar y Conectar al Broker en <code class="text-white">MainActivity.java</code></h3>
-          <span class="text-xs font-mono text-slate-400">Conexión Java</span>
+          <span class="px-2.5 py-0.5 rounded text-xs font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">JAVA · Android</span>
         </div>
         <p class="text-sm text-slate-300">
           Definimos las constantes de conexión, creamos la instancia de <code class="text-white">MqttAndroidClient</code> en <code class="text-white">onCreate()</code> y configuramos <code class="text-white">MqttConnectOptions</code> con usuario, contraseña y reconexión automática:
         </p>
-        <pre class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-200 overflow-x-auto"><code>public class MainActivity extends AppCompatActivity {
+        <div class="monokai-window">
+          <div class="monokai-bar">
+            <div class="monokai-dots">
+              <span style="background:#ff5f56"></span>
+              <span style="background:#ffbd2e"></span>
+              <span style="background:#27c93f"></span>
+            </div>
+            <span class="text-[11px] font-mono text-emerald-400 font-bold">JAVA · MainActivity.java</span>
+          </div>
+          <pre><code class="language-java">public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     // URL principal por SSL (puerto 8883) y alternativa por WSS (puerto 8084)
@@ -191,6 +261,7 @@
         });
     }
 }</code></pre>
+        </div>
       </div>
     </section>
 
@@ -215,7 +286,16 @@
 
         <div class="space-y-2">
           <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-300">1. Asignar los botones en Java (<code class="text-white">setupButtons</code>):</h4>
-          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>// Botones de encendido y apagado de la luz del living
+          <div class="monokai-window">
+            <div class="monokai-bar">
+              <div class="monokai-dots">
+                <span style="background:#ff5f56"></span>
+                <span style="background:#ffbd2e"></span>
+                <span style="background:#27c93f"></span>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 font-bold">JAVA · setupButtons()</span>
+            </div>
+            <pre><code class="language-java">// Botones de encendido y apagado de la luz del living
 findViewById(R.id.btnLivingLuzOn).setOnClickListener(v -&gt;
     publishWithConfirmation("hogar/living/luz/set", "on", "Luz encendida")
 );
@@ -229,11 +309,21 @@ findViewById(R.id.btnSetTemp).setOnClickListener(v -&gt; {
     String temp = String.valueOf(tempSlider.getProgress());
     publishWithConfirmation("hogar/clima/temperatura/set", temp, "Temp: " + temp + "°C");
 });</code></pre>
+          </div>
         </div>
 
         <div class="space-y-2">
           <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-300">2. Método que envía el mensaje al Broker (<code class="text-white">publishWithConfirmation</code>):</h4>
-          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>private void publishWithConfirmation(String topic, String payload, String msg) {
+          <div class="monokai-window">
+            <div class="monokai-bar">
+              <div class="monokai-dots">
+                <span style="background:#ff5f56"></span>
+                <span style="background:#ffbd2e"></span>
+                <span style="background:#27c93f"></span>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 font-bold">JAVA · publishWithConfirmation()</span>
+            </div>
+            <pre><code class="language-java">private void publishWithConfirmation(String topic, String payload, String msg) {
     // 1. Mostrar en el visor local y confirmar con un Toast
     appendToSubscriptionLog(topic, payload);
     Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
@@ -259,6 +349,7 @@ findViewById(R.id.btnSetTemp).setOnClickListener(v -&gt; {
         Log.e(TAG, "Error al crear el mensaje MQTT", e);
     }
 }</code></pre>
+          </div>
         </div>
       </div>
 
@@ -280,7 +371,16 @@ findViewById(R.id.btnSetTemp).setOnClickListener(v -&gt; {
 
         <div class="space-y-2">
           <h4 class="text-xs font-bold uppercase tracking-wider text-sky-300">1. Suscribirse al tópico <code class="text-white">hogar/#</code> al conectar:</h4>
-          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>private void subscribeToTopics() {
+          <div class="monokai-window">
+            <div class="monokai-bar">
+              <div class="monokai-dots">
+                <span style="background:#ff5f56"></span>
+                <span style="background:#ffbd2e"></span>
+                <span style="background:#27c93f"></span>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 font-bold">JAVA · subscribeToTopics()</span>
+            </div>
+            <pre><code class="language-java">private void subscribeToTopics() {
     // El comodín "#" recibe todos los subtópicos que empiecen con "hogar/"
     client.subscribe("hogar/#", 1, null, new IMqttActionListener() {
         @Override
@@ -294,11 +394,21 @@ findViewById(R.id.btnSetTemp).setOnClickListener(v -&gt; {
         }
     });
 }</code></pre>
+          </div>
         </div>
 
         <div class="space-y-2">
           <h4 class="text-xs font-bold uppercase tracking-wider text-sky-300">2. Recibir el mensaje y mostrarlo en el Visor de la App:</h4>
-          <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 overflow-x-auto"><code>client.setCallback(new MqttCallbackExtended() {
+          <div class="monokai-window">
+            <div class="monokai-bar">
+              <div class="monokai-dots">
+                <span style="background:#ff5f56"></span>
+                <span style="background:#ffbd2e"></span>
+                <span style="background:#27c93f"></span>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 font-bold">JAVA · MqttCallbackExtended</span>
+            </div>
+            <pre><code class="language-java">client.setCallback(new MqttCallbackExtended() {
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
         // Apenas termina de conectar, activamos la suscripción
@@ -329,11 +439,13 @@ findViewById(R.id.btnSetTemp).setOnClickListener(v -&gt; {
     @Override
     public void deliveryComplete(IMqttDeliveryToken token) { }
 });</code></pre>
+          </div>
         </div>
       </div>
 
     </section>
 
   </main>
+  <script>hljs.highlightAll();</script>
 </body>
 </html>
