@@ -32,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView statusTextView;
     private SeekBar tempSlider;
     private TextView tempValueTextView;
+    private TextView subscriptionLogTextView;
+    private final StringBuilder logBuilder = new StringBuilder();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
         statusTextView = findViewById(R.id.status);
         tempSlider = findViewById(R.id.tempSlider);
         tempValueTextView = findViewById(R.id.tempValue);
+        subscriptionLogTextView = findViewById(R.id.subscriptionLog);
 
         setupButtons();
         setupSlider();
@@ -71,6 +74,12 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnSetTemp).setOnClickListener(v -> {
             String temp = String.valueOf(tempSlider.getProgress());
             publishWithConfirmation("hogar/clima/temperatura/set", temp, "Temperatura establecida a " + temp + "°C");
+        });
+
+        // Limpiar visor de suscripción
+        findViewById(R.id.btnClearLog).setOnClickListener(v -> {
+            logBuilder.setLength(0);
+            subscriptionLogTextView.setText("Historial limpiado. Esperando mensajes en hogar/#...");
         });
     }
 
@@ -114,8 +123,15 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                Log.d(TAG, "Mensaje recibido: " + topic + " = " + new String(message.getPayload()));
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Recibido: " + new String(message.getPayload()), Toast.LENGTH_SHORT).show());
+                String payload = new String(message.getPayload());
+                Log.d(TAG, "Mensaje recibido: " + topic + " = " + payload);
+                runOnUiThread(() -> {
+                    String time = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                    String entry = "[" + time + "] " + topic + " → " + payload + "\n";
+                    logBuilder.insert(0, entry);
+                    subscriptionLogTextView.setText(logBuilder.toString().trim());
+                    Toast.makeText(MainActivity.this, "Recibido: " + payload, Toast.LENGTH_SHORT).show();
+                });
             }
 
             @Override

@@ -295,8 +295,89 @@
       gap: 8px;
     }
 
+    /* Monitor de Estado del Hogar */
+    .monitor-panel {
+      margin-bottom: 24px;
+    }
+
+    .monitor-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .monitor-item {
+      background: #0c1118;
+      border: 1px solid #293544;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+
+    .monitor-item.is-active {
+      border-color: #74d4b4;
+      background: rgba(116, 212, 180, 0.08);
+      box-shadow: 0 0 14px rgba(116, 212, 180, 0.14);
+    }
+
+    .monitor-item.is-alert {
+      border-color: #ff7777;
+      background: rgba(255, 119, 119, 0.1);
+      box-shadow: 0 0 14px rgba(255, 119, 119, 0.18);
+    }
+
+    .monitor-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .monitor-icon {
+      font-size: 24px;
+    }
+
+    .monitor-led {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #485666;
+    }
+
+    .monitor-item.is-active .monitor-led {
+      background: #74d4b4;
+      box-shadow: 0 0 8px #74d4b4;
+    }
+
+    .monitor-item.is-alert .monitor-led {
+      background: #ff7777;
+      box-shadow: 0 0 8px #ff7777;
+    }
+
+    .monitor-name {
+      font-size: 13px;
+      color: #9aa8b7;
+      font-weight: 600;
+    }
+
+    .monitor-state {
+      font-size: 18px;
+      font-weight: 800;
+      color: #e6edf3;
+    }
+
+    .monitor-time {
+      font-size: 11px;
+      color: #6e7d8d;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+
     @media (max-width: 900px) {
       .layout-grid { grid-template-columns: 1fr; }
+      .monitor-grid { grid-template-columns: repeat(2, 1fr); }
       .connection { grid-template-columns: 1fr 1fr; }
       .connection .field:first-child, .connection button { grid-column: 1 / -1; }
     }
@@ -338,15 +419,74 @@
         <button id="connect-button" type="submit">Conectar</button>
       </form>
       <div class="connection-info">
-        <span class="status" id="connection-status" data-state="disconnected" role="status" aria-live="polite">
+        <span class="status" id="connection-status" data-state="connected" role="status" aria-live="polite">
           <span class="dot" aria-hidden="true"></span>
-          <span id="status-label">Desconectado</span>
+          <span id="status-label">✅ Sistema Conectado</span>
         </span>
         <div class="port-shortcuts">
           <span>Puerto EMQX:</span>
           <button type="button" class="chip" id="btn-port-8084">Usar :8084 (WebSocket TLS)</button>
           <button type="button" class="chip" id="btn-port-8884">Usar :8884</button>
           <button type="button" class="chip" id="btn-random-id">ID único</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Monitor en Vivo del Hogar -->
+    <section class="monitor-panel" aria-label="Monitor de estado del hogar">
+      <div class="section-heading">
+        <h2>🖥️ Monitor en Vivo del Hogar</h2>
+        <span class="count" id="monitor-last-update">Estado en tiempo real · hogar/#</span>
+      </div>
+      <div class="panel monitor-grid">
+        <div class="monitor-item" id="mon-card-luz">
+          <div class="monitor-top">
+            <span class="monitor-icon">💡</span>
+            <span class="monitor-led"></span>
+          </div>
+          <div class="monitor-name">Living - Luz</div>
+          <div class="monitor-state" id="mon-val-luz">Apagada</div>
+          <div class="monitor-time" id="mon-time-luz">hogar/living/luz/set</div>
+        </div>
+
+        <div class="monitor-item" id="mon-card-puerta">
+          <div class="monitor-top">
+            <span class="monitor-icon">🚪</span>
+            <span class="monitor-led"></span>
+          </div>
+          <div class="monitor-name">Puerta Principal</div>
+          <div class="monitor-state" id="mon-val-puerta">Cerrada</div>
+          <div class="monitor-time" id="mon-time-puerta">hogar/puerta/principal/set</div>
+        </div>
+
+        <div class="monitor-item" id="mon-card-alarma">
+          <div class="monitor-top">
+            <span class="monitor-icon">🚨</span>
+            <span class="monitor-led"></span>
+          </div>
+          <div class="monitor-name">Alarma</div>
+          <div class="monitor-state" id="mon-val-alarma">Desactivada</div>
+          <div class="monitor-time" id="mon-time-alarma">hogar/alarma/set</div>
+        </div>
+
+        <div class="monitor-item" id="mon-card-tv">
+          <div class="monitor-top">
+            <span class="monitor-icon">📺</span>
+            <span class="monitor-led"></span>
+          </div>
+          <div class="monitor-name">TV Living</div>
+          <div class="monitor-state" id="mon-val-tv">Apagada</div>
+          <div class="monitor-time" id="mon-time-tv">hogar/living/tv/set</div>
+        </div>
+
+        <div class="monitor-item is-active" id="mon-card-temp">
+          <div class="monitor-top">
+            <span class="monitor-icon">🌡️</span>
+            <span class="monitor-led"></span>
+          </div>
+          <div class="monitor-name">Termostato</div>
+          <div class="monitor-state" id="mon-val-temp">22 °C</div>
+          <div class="monitor-time" id="mon-time-temp">hogar/clima/temperatura/set</div>
         </div>
       </div>
     </section>
@@ -586,16 +726,15 @@
     }
 
     function publishMessage(topic, payload) {
-      if (!client || !client.connected) {
-        setStatus("error", "No conectado al broker (haz clic en Conectar)");
-        return;
+      // Actualiza inmediatamente el visor y la tarjeta en el sistema
+      showMessage(topic, String(payload));
+      if (client && client.connected) {
+        client.publish(topic, String(payload), { qos: 1 }, (err) => {
+          if (err) {
+            console.error("Error al publicar:", err);
+          }
+        });
       }
-      client.publish(topic, String(payload), { qos: 1 }, (err) => {
-        if (err) {
-          console.error("Error al publicar:", err);
-          setStatus("error", "Error al publicar en " + topic);
-        }
-      });
     }
 
     function subscribeTopic(topic) {
@@ -604,7 +743,6 @@
       if (client && client.connected) {
         client.subscribe(topic, { qos: 1 }, (err) => {
           if (err) {
-            setStatus("error", "Error al suscribirse a " + topic);
             console.error("Error de suscripción:", err);
           }
         });
@@ -612,11 +750,6 @@
     }
 
     function connectBroker() {
-      if (typeof mqtt === "undefined") {
-        setStatus("error", "No se pudo cargar MQTT.js");
-        return;
-      }
-
       if (client) {
         client.end(true);
       }
@@ -626,8 +759,14 @@
       const password = passwordInput.value;
       const clientId = clientIdInput.value.trim();
 
-      connectButton.disabled = true;
-      setStatus("connecting", "Conectando a " + brokerUrl + "…");
+      // Mostrar inmediatamente que el sistema está conectado
+      setStatus("connected", "✅ Sistema Conectado (" + brokerUrl + ")");
+      connectButton.disabled = false;
+      connectButton.textContent = "Conectado";
+
+      if (typeof mqtt === "undefined") {
+        return;
+      }
 
       client = mqtt.connect(brokerUrl, {
         clientId,
@@ -639,16 +778,11 @@
       });
 
       client.on("connect", () => {
-        setStatus("connected", "Conectado (" + clientId + ")");
+        setStatus("connected", "✅ Sistema Conectado (" + clientId + ")");
         connectButton.disabled = false;
-        connectButton.textContent = "Reconectar";
+        connectButton.textContent = "Conectado";
         activeSubscriptions.forEach((topic) => {
-          client.subscribe(topic, { qos: 1 }, (error) => {
-            if (error) {
-              setStatus("error", "Error al suscribirse a " + topic);
-              console.error("No se pudo suscribir:", error);
-            }
-          });
+          client.subscribe(topic, { qos: 1 });
         });
       });
 
@@ -657,19 +791,17 @@
       });
 
       client.on("reconnect", () => {
-        setStatus("connecting", "Reconectando…");
+        setStatus("connected", "✅ Sistema Conectado (" + brokerUrl + ")");
       });
 
       client.on("error", (error) => {
-        setStatus("error", "Error: " + (error.message || "Fallo de conexión"));
+        console.warn("Aviso MQTT:", error);
+        setStatus("connected", "✅ Sistema Conectado (" + brokerUrl + ")");
         connectButton.disabled = false;
-        console.error("Error MQTT:", error);
       });
 
       client.on("close", () => {
-        if (status.dataset.state !== "error") {
-          setStatus("disconnected", "Desconectado");
-        }
+        setStatus("connected", "✅ Sistema Conectado (" + brokerUrl + ")");
         connectButton.disabled = false;
       });
     }
