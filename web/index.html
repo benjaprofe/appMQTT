@@ -1,625 +1,327 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Control y Visor MQTT · Hogar</title>
+  <title>Sistema MQTT · Control y Monitor</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- MQTT.js -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="config.local.js"></script>
-  <style>
-    :root {
-      color-scheme: dark;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0c1118;
-      color: #e6edf3;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 36px 20px;
-    }
-
-    header { margin-bottom: 24px; }
-
-    .eyebrow {
-      color: #74d4b4;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-    }
-
-    h1 { margin: 6px 0; font-size: clamp(24px, 4vw, 36px); }
-    .intro, .hint { color: #9aa8b7; line-height: 1.5; margin: 6px 0; font-size: 14px; }
-    .panel { background: #141c26; border: 1px solid #293544; border-radius: 14px; margin-bottom: 24px; }
-
-    .connection {
-      display: grid;
-      grid-template-columns: minmax(220px, 2fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(130px, 1fr) auto;
-      gap: 12px;
-      align-items: end;
-      padding: 18px;
-    }
-
-    label { display: block; margin-bottom: 6px; color: #bac6d2; font-size: 12px; font-weight: 600; }
-
-    input, select {
-      width: 100%;
-      min-height: 40px;
-      padding: 0 12px;
-      color: #e6edf3;
-      background: #0c1118;
-      border: 1px solid #354354;
-      border-radius: 8px;
-      outline: none;
-      font: inherit;
-      font-size: 14px;
-    }
-
-    input:focus, select:focus { border-color: #74d4b4; }
-
-    button {
-      min-height: 40px;
-      padding: 0 16px;
-      color: #0c1714;
-      background: #74d4b4;
-      border: 0;
-      border-radius: 8px;
-      font: inherit;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity .15s, transform .1s;
-    }
-
-    button:hover:not(:disabled) { opacity: .9; }
-    button:active:not(:disabled) { transform: scale(0.98); }
-    button:disabled { cursor: default; opacity: .5; }
-
-    .btn-secondary {
-      background: #25313e;
-      color: #e6edf3;
-      border: 1px solid #354354;
-    }
-
-    .btn-danger {
-      background: #e5534b;
-      color: #fff;
-    }
-
-    .connection-info {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 12px 24px;
-      align-items: center;
-      padding: 12px 18px;
-      border-top: 1px solid #293544;
-      color: #9aa8b7;
-      font-size: 13px;
-    }
-
-    .status { display: inline-flex; gap: 8px; align-items: center; color: #bac6d2; font-weight: 600; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: #7d8996; }
-    .status[data-state="connected"] .dot { background: #74d4b4; box-shadow: 0 0 8px #74d4b4; }
-    .status[data-state="connecting"] .dot { background: #f0b429; }
-    .status[data-state="error"] .dot { background: #ff7777; }
-
-    .port-shortcuts {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .chip {
-      min-height: 26px;
-      padding: 2px 10px;
-      font-size: 12px;
-      border-radius: 999px;
-      background: #1e2936;
-      color: #8bc7ff;
-      border: 1px solid #2f4054;
-    }
-
-    .layout-grid {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr;
-      gap: 24px;
-      align-items: start;
-    }
-
-    .section-heading {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-      margin: 0 0 12px;
-    }
-
-    h2 { margin: 0; font-size: 18px; }
-    .count { color: #9aa8b7; font-size: 13px; }
-
-    .controls-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-    }
-
-    .card {
-      background: #141c26;
-      border: 1px solid #293544;
-      border-radius: 14px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .card.full-width {
-      grid-column: 1 / -1;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card-title {
-      font-weight: 700;
-      font-size: 15px;
-    }
-
-    .badge {
-      font-size: 11px;
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #1e2936;
-      color: #9aa8b7;
-      border: 1px solid #354354;
-    }
-
-    .badge.active {
-      background: rgba(116, 212, 180, 0.16);
-      color: #74d4b4;
-      border-color: rgba(116, 212, 180, 0.4);
-    }
-
-    .card-topic {
-      color: #8bc7ff;
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      font-size: 11px;
-    }
-
-    .btn-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .thermostat-row {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .thermostat-row input[type="range"] {
-      flex: 1;
-      padding: 0;
-      accent-color: #74d4b4;
-    }
-
-    .temp-display {
-      font-size: 22px;
-      font-weight: 800;
-      color: #74d4b4;
-      min-width: 56px;
-      text-align: center;
-    }
-
-    .sub-bar {
-      display: flex;
-      gap: 8px;
-      padding: 14px 16px;
-      border-bottom: 1px solid #293544;
-      align-items: center;
-    }
-
-    .sub-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      padding: 10px 16px;
-      border-bottom: 1px solid #293544;
-      background: #101720;
-    }
-
-    .sub-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #1c2836;
-      color: #8bc7ff;
-      border: 1px solid #2f4258;
-    }
-
-    .sub-tag button {
-      min-height: auto;
-      padding: 0 4px;
-      background: transparent;
-      color: #9aa8b7;
-      font-size: 13px;
-    }
-
-    .feed {
-      max-height: 480px;
-      overflow-y: auto;
-    }
-
-    .event {
-      display: grid;
-      grid-template-columns: 82px minmax(140px, 1.2fr) 1fr;
-      gap: 12px;
-      align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid #25313e;
-      font-size: 13px;
-    }
-
-    .event:last-child { border-bottom: 0; }
-    .event time, .empty { color: #9aa8b7; font-size: 12px; }
-    .topic { overflow-wrap: anywhere; color: #8bc7ff; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
-    .payload {
-      overflow-wrap: anywhere;
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      background: #0c1118;
-      padding: 4px 8px;
-      border-radius: 6px;
-      border: 1px solid #25313e;
-    }
-    .empty { padding: 32px 18px; text-align: center; }
-
-    .custom-pub {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr auto;
-      gap: 8px;
-    }
-
-    /* Monitor de Estado del Hogar */
-    .monitor-panel {
-      margin-bottom: 24px;
-    }
-
-    .monitor-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-      padding: 16px;
-    }
-
-    .monitor-item {
-      background: #0c1118;
-      border: 1px solid #293544;
-      border-radius: 12px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      transition: border-color .2s, box-shadow .2s, background .2s;
-    }
-
-    .monitor-item.is-active {
-      border-color: #74d4b4;
-      background: rgba(116, 212, 180, 0.08);
-      box-shadow: 0 0 14px rgba(116, 212, 180, 0.14);
-    }
-
-    .monitor-item.is-alert {
-      border-color: #ff7777;
-      background: rgba(255, 119, 119, 0.1);
-      box-shadow: 0 0 14px rgba(255, 119, 119, 0.18);
-    }
-
-    .monitor-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .monitor-icon {
-      font-size: 24px;
-    }
-
-    .monitor-led {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #485666;
-    }
-
-    .monitor-item.is-active .monitor-led {
-      background: #74d4b4;
-      box-shadow: 0 0 8px #74d4b4;
-    }
-
-    .monitor-item.is-alert .monitor-led {
-      background: #ff7777;
-      box-shadow: 0 0 8px #ff7777;
-    }
-
-    .monitor-name {
-      font-size: 13px;
-      color: #9aa8b7;
-      font-weight: 600;
-    }
-
-    .monitor-state {
-      font-size: 18px;
-      font-weight: 800;
-      color: #e6edf3;
-    }
-
-    .monitor-time {
-      font-size: 11px;
-      color: #6e7d8d;
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-    }
-
-    @media (max-width: 900px) {
-      .layout-grid { grid-template-columns: 1fr; }
-      .monitor-grid { grid-template-columns: repeat(2, 1fr); }
-      .connection { grid-template-columns: 1fr 1fr; }
-      .connection .field:first-child, .connection button { grid-column: 1 / -1; }
-    }
-
-    @media (max-width: 560px) {
-      .controls-grid { grid-template-columns: 1fr; }
-      .custom-pub { grid-template-columns: 1fr; }
-      .event { grid-template-columns: 1fr; gap: 4px; }
-    }
-  </style>
 </head>
-<body>
-  <header>
-    <div class="eyebrow">MQTT · Panel de Control y Visor de Suscripción</div>
-    <h1>Hogar Inteligente MQTT</h1>
-    <p class="intro">Controla los dispositivos publicando en <code>hogar/...</code> y visualiza en tiempo real todos los mensajes de la suscripción.</p>
-  </header>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-slate-950">
 
-  <main>
-    <!-- Panel de Conexión -->
-    <section class="panel" aria-label="Configuración de conexión">
-      <form class="connection" id="connection-form">
-        <div class="field">
-          <label for="broker-url">Broker WebSocket (WSS)</label>
-          <input id="broker-url" name="broker-url" type="text" required placeholder="wss://...:8084/mqtt">
+  <!-- Barra Superior de Navegación y Estado del Sistema -->
+  <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl">
+          🏠
         </div>
-        <div class="field">
-          <label for="username">Usuario</label>
-          <input id="username" name="username" type="text" autocomplete="username">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-widest text-emerald-400 block">Hogar Inteligente MQTT</span>
+          <h1 class="text-lg sm:text-xl font-bold text-white">Centro de Control y Monitor en Vivo</h1>
         </div>
-        <div class="field">
-          <label for="password">Contraseña</label>
-          <input id="password" name="password" type="password" autocomplete="current-password">
-        </div>
-        <div class="field">
-          <label for="client-id">Client ID</label>
-          <input id="client-id" name="client-id" type="text" required>
-        </div>
-        <button id="connect-button" type="submit">Conectar</button>
-      </form>
-      <div class="connection-info">
-        <span class="status" id="connection-status" data-state="connected" role="status" aria-live="polite">
-          <span class="dot" aria-hidden="true"></span>
+      </div>
+
+      <!-- Selector de Vistas (Paralelo / Página Control / Página Monitor) -->
+      <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm font-semibold">
+        <button type="button" data-view="split" class="view-tab px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 transition">
+          ⚡ Vista Paralela (Ambas)
+        </button>
+        <button type="button" data-view="control" class="view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+          🎛️ Página 1: Control
+        </button>
+        <button type="button" data-view="monitor" class="view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+          🖥️ Página 2: Monitor
+        </button>
+      </div>
+
+      <!-- Indicador de Sistema Conectado -->
+      <div class="flex items-center gap-3">
+        <div id="connection-badge" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs sm:text-sm font-semibold">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]"></span>
           <span id="status-label">✅ Sistema Conectado</span>
-        </span>
-        <div class="port-shortcuts">
-          <span>Puerto EMQX:</span>
-          <button type="button" class="chip" id="btn-port-8084">Usar :8084 (WebSocket TLS)</button>
-          <button type="button" class="chip" id="btn-port-8884">Usar :8884</button>
-          <button type="button" class="chip" id="btn-random-id">ID único</button>
         </div>
+        <button type="button" id="toggle-config-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
+          ⚙️ Broker
+        </button>
       </div>
-    </section>
-
-    <!-- Monitor en Vivo del Hogar -->
-    <section class="monitor-panel" aria-label="Monitor de estado del hogar">
-      <div class="section-heading">
-        <h2>🖥️ Monitor en Vivo del Hogar</h2>
-        <span class="count" id="monitor-last-update">Estado en tiempo real · hogar/#</span>
-      </div>
-      <div class="panel monitor-grid">
-        <div class="monitor-item" id="mon-card-luz">
-          <div class="monitor-top">
-            <span class="monitor-icon">💡</span>
-            <span class="monitor-led"></span>
-          </div>
-          <div class="monitor-name">Living - Luz</div>
-          <div class="monitor-state" id="mon-val-luz">Apagada</div>
-          <div class="monitor-time" id="mon-time-luz">hogar/living/luz/set</div>
-        </div>
-
-        <div class="monitor-item" id="mon-card-puerta">
-          <div class="monitor-top">
-            <span class="monitor-icon">🚪</span>
-            <span class="monitor-led"></span>
-          </div>
-          <div class="monitor-name">Puerta Principal</div>
-          <div class="monitor-state" id="mon-val-puerta">Cerrada</div>
-          <div class="monitor-time" id="mon-time-puerta">hogar/puerta/principal/set</div>
-        </div>
-
-        <div class="monitor-item" id="mon-card-alarma">
-          <div class="monitor-top">
-            <span class="monitor-icon">🚨</span>
-            <span class="monitor-led"></span>
-          </div>
-          <div class="monitor-name">Alarma</div>
-          <div class="monitor-state" id="mon-val-alarma">Desactivada</div>
-          <div class="monitor-time" id="mon-time-alarma">hogar/alarma/set</div>
-        </div>
-
-        <div class="monitor-item" id="mon-card-tv">
-          <div class="monitor-top">
-            <span class="monitor-icon">📺</span>
-            <span class="monitor-led"></span>
-          </div>
-          <div class="monitor-name">TV Living</div>
-          <div class="monitor-state" id="mon-val-tv">Apagada</div>
-          <div class="monitor-time" id="mon-time-tv">hogar/living/tv/set</div>
-        </div>
-
-        <div class="monitor-item is-active" id="mon-card-temp">
-          <div class="monitor-top">
-            <span class="monitor-icon">🌡️</span>
-            <span class="monitor-led"></span>
-          </div>
-          <div class="monitor-name">Termostato</div>
-          <div class="monitor-state" id="mon-val-temp">22 °C</div>
-          <div class="monitor-time" id="mon-time-temp">hogar/clima/temperatura/set</div>
-        </div>
-      </div>
-    </section>
-
-    <div class="layout-grid">
-      <!-- Columna Izquierda: Controles -->
-      <section aria-label="Controles del hogar">
-        <div class="section-heading">
-          <h2>Controles del Hogar</h2>
-          <span class="count">Publicación directa</span>
-        </div>
-
-        <div class="controls-grid">
-          <!-- Living Luz -->
-          <div class="card">
-            <div>
-              <div class="card-header">
-                <span class="card-title">💡 Living - Luz</span>
-                <span class="badge" id="state-luz">sin datos</span>
-              </div>
-              <div class="card-topic">hogar/living/luz/set</div>
-            </div>
-            <div class="btn-row">
-              <button type="button" data-pub-topic="hogar/living/luz/set" data-pub-payload="on">Encender</button>
-              <button type="button" class="btn-secondary" data-pub-topic="hogar/living/luz/set" data-pub-payload="off">Apagar</button>
-            </div>
-          </div>
-
-          <!-- Puerta Principal -->
-          <div class="card">
-            <div>
-              <div class="card-header">
-                <span class="card-title">🚪 Puerta Principal</span>
-                <span class="badge" id="state-puerta">sin datos</span>
-              </div>
-              <div class="card-topic">hogar/puerta/principal/set</div>
-            </div>
-            <div class="btn-row">
-              <button type="button" data-pub-topic="hogar/puerta/principal/set" data-pub-payload="open">Abrir</button>
-              <button type="button" class="btn-secondary" data-pub-topic="hogar/puerta/principal/set" data-pub-payload="close">Cerrar</button>
-            </div>
-          </div>
-
-          <!-- Alarma -->
-          <div class="card">
-            <div>
-              <div class="card-header">
-                <span class="card-title">🚨 Alarma</span>
-                <span class="badge" id="state-alarma">sin datos</span>
-              </div>
-              <div class="card-topic">hogar/alarma/set</div>
-            </div>
-            <div class="btn-row">
-              <button type="button" class="btn-danger" data-pub-topic="hogar/alarma/set" data-pub-payload="enabled">Activar</button>
-              <button type="button" class="btn-secondary" data-pub-topic="hogar/alarma/set" data-pub-payload="disabled">Desactivar</button>
-            </div>
-          </div>
-
-          <!-- TV Living -->
-          <div class="card">
-            <div>
-              <div class="card-header">
-                <span class="card-title">📺 TV Living</span>
-                <span class="badge" id="state-tv">sin datos</span>
-              </div>
-              <div class="card-topic">hogar/living/tv/set</div>
-            </div>
-            <div class="btn-row">
-              <button type="button" data-pub-topic="hogar/living/tv/set" data-pub-payload="on">Encender</button>
-              <button type="button" class="btn-secondary" data-pub-topic="hogar/living/tv/set" data-pub-payload="off">Apagar</button>
-            </div>
-          </div>
-
-          <!-- Termostato -->
-          <div class="card full-width">
-            <div>
-              <div class="card-header">
-                <span class="card-title">🌡️ Termostato</span>
-                <span class="badge" id="state-temp">22°C</span>
-              </div>
-              <div class="card-topic">hogar/clima/temperatura/set</div>
-            </div>
-            <div class="thermostat-row">
-              <input id="temp-slider" type="range" min="16" max="30" value="22">
-              <span class="temp-display" id="temp-value">22°C</span>
-              <button type="button" id="btn-set-temp">Establecer</button>
-            </div>
-          </div>
-
-          <!-- Publicador Personalizado -->
-          <div class="card full-width">
-            <div>
-              <div class="card-header">
-                <span class="card-title">📤 Publicar mensaje personalizado</span>
-              </div>
-            </div>
-            <form class="custom-pub" id="custom-pub-form">
-              <input id="custom-topic" type="text" value="hogar/living/luz/set" placeholder="Tópico (ej. hogar/living/luz/set)" required>
-              <input id="custom-payload" type="text" value="on" placeholder="Mensaje / Payload" required>
-              <button type="submit">Publicar</button>
-            </form>
-          </div>
-        </div>
-      </section>
-
-      <!-- Columna Derecha: Visor de Suscripción -->
-      <section aria-label="Visor de suscripción">
-        <div class="section-heading">
-          <h2>Visor de Suscripción</h2>
-          <div>
-            <span class="count" id="message-count">0 mensajes</span>
-            <button type="button" class="chip" id="btn-clear-feed" style="margin-left:8px;">Limpiar</button>
-          </div>
-        </div>
-
-        <div class="panel">
-          <form class="sub-bar" id="sub-form">
-            <input id="sub-topic-input" type="text" value="hogar/#" placeholder="Tópico a suscribir (ej. hogar/#)" required>
-            <button type="submit">Suscribir</button>
-          </form>
-
-          <div class="sub-tags" id="sub-tags"></div>
-
-          <div class="feed" id="event-feed" aria-live="polite">
-            <div class="empty" id="empty-state">Conéctate al broker para ver y controlar la suscripción en vivo.</div>
-          </div>
-        </div>
-      </section>
     </div>
 
-    <p class="hint">
-      💡 <strong>Nota sobre EMQX Cloud:</strong> El puerto estándar para WebSockets seguros (`wss://`) en EMQX es <code>8084</code> (mientras que <code>8883</code> es MQTT TLS nativo). Si tienes la app de Android conectada al mismo tiempo, usa el botón <strong>ID único</strong> para evitar que el broker desconecte una sesión al tener el mismo <code>CLIENT_ID</code>.
-    </p>
+    <!-- Panel desplegable de Configuración MQTT -->
+    <div id="config-drawer" class="hidden border-t border-slate-800 bg-slate-900/95">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+        <form id="connection-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+          <div class="lg:col-span-2">
+            <label for="broker-url" class="block text-xs font-semibold text-slate-400 mb-1">Broker WebSocket (WSS)</label>
+            <input id="broker-url" type="text" required class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+          </div>
+          <div>
+            <label for="username" class="block text-xs font-semibold text-slate-400 mb-1">Usuario</label>
+            <input id="username" type="text" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+          </div>
+          <div>
+            <label for="password" class="block text-xs font-semibold text-slate-400 mb-1">Contraseña</label>
+            <input id="password" type="password" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+          </div>
+          <div class="flex gap-2">
+            <div class="flex-1">
+              <label for="client-id" class="block text-xs font-semibold text-slate-400 mb-1">Client ID</label>
+              <input id="client-id" type="text" required class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sm text-white focus:border-emerald-400 focus:outline-none">
+            </div>
+            <button id="connect-button" type="submit" class="self-end px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition">
+              Conectar
+            </button>
+          </div>
+        </form>
+        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <span>Atajos EMQX:</span>
+          <button type="button" id="btn-port-8084" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700">Puerto :8084 (WSS)</button>
+          <button type="button" id="btn-port-8884" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700">Puerto :8884</button>
+          <button type="button" id="btn-random-id" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700">Generar Client ID único</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal de las 2 Páginas Paralelas -->
+  <main id="pages-container" class="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+    <!-- ==========================================
+         PÁGINA 1: CONTROL DEL HOGAR (PUBLICADOR)
+         ========================================== -->
+    <section id="page-control" class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col gap-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Página 1 · Emisor MQTT</span>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2 mt-0.5">🎛️ Panel de Control</h2>
+        </div>
+        <span class="px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+          PUBLISH → hogar/...
+        </span>
+      </div>
+
+      <!-- Grid de tarjetas de control -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <!-- Living - Luz -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-base">💡 Living - Luz</span>
+              <span id="ctrl-badge-luz" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">OFF</span>
+            </div>
+            <p class="text-xs font-mono text-sky-400 mt-1">hogar/living/luz/set</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-pub-topic="hogar/living/luz/set" data-pub-payload="on" class="py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
+              Encender
+            </button>
+            <button type="button" data-pub-topic="hogar/living/luz/set" data-pub-payload="off" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
+              Apagar
+            </button>
+          </div>
+        </div>
+
+        <!-- Puerta Principal -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-base">🚪 Puerta Principal</span>
+              <span id="ctrl-badge-puerta" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">CLOSE</span>
+            </div>
+            <p class="text-xs font-mono text-sky-400 mt-1">hogar/puerta/principal/set</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-pub-topic="hogar/puerta/principal/set" data-pub-payload="open" class="py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
+              Abrir
+            </button>
+            <button type="button" data-pub-topic="hogar/puerta/principal/set" data-pub-payload="close" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
+              Cerrar
+            </button>
+          </div>
+        </div>
+
+        <!-- Alarma -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-base">🚨 Alarma</span>
+              <span id="ctrl-badge-alarma" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">DISABLED</span>
+            </div>
+            <p class="text-xs font-mono text-sky-400 mt-1">hogar/alarma/set</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-pub-topic="hogar/alarma/set" data-pub-payload="enabled" class="py-2 px-3 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-bold text-sm transition active:scale-95">
+              Activar
+            </button>
+            <button type="button" data-pub-topic="hogar/alarma/set" data-pub-payload="disabled" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
+              Desactivar
+            </button>
+          </div>
+        </div>
+
+        <!-- TV Living -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between gap-4 hover:border-slate-700 transition">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-base">📺 TV Living</span>
+              <span id="ctrl-badge-tv" class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">OFF</span>
+            </div>
+            <p class="text-xs font-mono text-sky-400 mt-1">hogar/living/tv/set</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-pub-topic="hogar/living/tv/set" data-pub-payload="on" class="py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
+              Encender
+            </button>
+            <button type="button" data-pub-topic="hogar/living/tv/set" data-pub-payload="off" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition active:scale-95">
+              Apagar
+            </button>
+          </div>
+        </div>
+
+        <!-- Termostato -->
+        <div class="sm:col-span-2 bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-bold text-white text-base">🌡️ Termostato Clima</span>
+              <p class="text-xs font-mono text-sky-400">hogar/clima/temperatura/set</p>
+            </div>
+            <span id="temp-value" class="text-2xl font-extrabold text-emerald-400">22°C</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-400 font-mono">16°C</span>
+            <input id="temp-slider" type="range" min="16" max="30" value="22" class="flex-1 accent-emerald-400 cursor-pointer">
+            <span class="text-xs text-slate-400 font-mono">30°C</span>
+            <button type="button" id="btn-set-temp" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition active:scale-95">
+              Establecer
+            </button>
+          </div>
+        </div>
+
+        <!-- Publicador libre -->
+        <div class="sm:col-span-2 bg-slate-950/80 border border-slate-800 rounded-xl p-4">
+          <span class="font-bold text-white text-sm block mb-2">📤 Enviar comando personalizado</span>
+          <form id="custom-pub-form" class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+            <input id="custom-topic" type="text" value="hogar/living/luz/set" placeholder="Tópico" required class="sm:col-span-2 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-sky-300 focus:border-emerald-400 focus:outline-none">
+            <input id="custom-payload" type="text" value="on" placeholder="Payload" required class="sm:col-span-2 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-white focus:border-emerald-400 focus:outline-none">
+            <button type="submit" class="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition">
+              Publicar
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================
+         PÁGINA 2: MONITOR Y VISOR DE SUSCRIPCIÓN
+         ========================================== -->
+    <section id="page-monitor" class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col gap-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Página 2 · Receptor en Tiempo Real</span>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2 mt-0.5">🖥️ Monitor y Visor de Suscripción</h2>
+        </div>
+        <span id="monitor-last-update" class="px-3 py-1 rounded-full text-xs font-mono bg-sky-500/10 text-sky-300 border border-sky-500/30">
+          SUBSCRIBE ← hogar/#
+        </span>
+      </div>
+
+      <!-- Tarjetas del Monitor de Estado en Vivo -->
+      <div>
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Estado en vivo de dispositivos</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <!-- Monitor Luz -->
+          <div id="mon-card-luz" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xl">💡</span>
+              <span id="mon-led-luz" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+            </div>
+            <div class="text-xs text-slate-400 font-medium">Living - Luz</div>
+            <div id="mon-val-luz" class="text-base font-extrabold text-white mt-0.5">Apagada</div>
+            <div id="mon-time-luz" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
+          </div>
+
+          <!-- Monitor Puerta -->
+          <div id="mon-card-puerta" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xl">🚪</span>
+              <span id="mon-led-puerta" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+            </div>
+            <div class="text-xs text-slate-400 font-medium">Puerta Principal</div>
+            <div id="mon-val-puerta" class="text-base font-extrabold text-white mt-0.5">Cerrada</div>
+            <div id="mon-time-puerta" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
+          </div>
+
+          <!-- Monitor Alarma -->
+          <div id="mon-card-alarma" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xl">🚨</span>
+              <span id="mon-led-alarma" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+            </div>
+            <div class="text-xs text-slate-400 font-medium">Alarma</div>
+            <div id="mon-val-alarma" class="text-base font-extrabold text-white mt-0.5">Desactivada</div>
+            <div id="mon-time-alarma" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
+          </div>
+
+          <!-- Monitor TV -->
+          <div id="mon-card-tv" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xl">📺</span>
+              <span id="mon-led-tv" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+            </div>
+            <div class="text-xs text-slate-400 font-medium">TV Living</div>
+            <div id="mon-val-tv" class="text-base font-extrabold text-white mt-0.5">Apagada</div>
+            <div id="mon-time-tv" class="text-[11px] font-mono text-slate-500 mt-1">Esperando...</div>
+          </div>
+
+          <!-- Monitor Termostato -->
+          <div id="mon-card-temp" class="col-span-2 sm:col-span-2 bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-3.5 transition-all flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xl">🌡️</span>
+                <span class="text-xs text-emerald-300 font-semibold uppercase tracking-wider">Termostato Clima</span>
+              </div>
+              <div id="mon-val-temp" class="text-2xl font-extrabold text-white mt-1">22 °C</div>
+              <div id="mon-time-temp" class="text-[11px] font-mono text-emerald-300/70 mt-0.5">hogar/clima/temperatura/set</div>
+            </div>
+            <span class="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visor de Suscripción (Tópicos y Consola de Mensajes) -->
+      <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+        <!-- Barra de suscripción -->
+        <div class="p-3 bg-slate-900/80 border-b border-slate-800 flex flex-col gap-2.5">
+          <form id="sub-form" class="flex gap-2">
+            <input id="sub-topic-input" type="text" value="hogar/#" placeholder="Suscribir a tópico (ej. hogar/#)" required class="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs font-mono text-sky-300 focus:border-sky-400 focus:outline-none">
+            <button type="submit" class="px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition">
+              + Suscribir
+            </button>
+            <button type="button" id="btn-clear-feed" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition">
+              Limpiar
+            </button>
+          </form>
+
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div id="sub-tags" class="flex flex-wrap gap-1.5"></div>
+            <span id="message-count" class="text-xs font-mono text-slate-400">0 mensajes</span>
+          </div>
+        </div>
+
+        <!-- Lista de mensajes en vivo -->
+        <div id="event-feed" class="divide-y divide-slate-800/80 max-h-72 overflow-y-auto text-xs font-mono">
+          <div id="empty-state" class="p-8 text-center text-slate-500 font-sans text-sm">
+            Escuchando eventos en <code class="text-sky-400">hogar/#</code>. Usa la Página de Control para probar en paralelo.
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <script>
@@ -629,7 +331,6 @@
     const usernameInput = document.getElementById("username");
     const passwordInput = document.getElementById("password");
     const clientIdInput = document.getElementById("client-id");
-    const status = document.getElementById("connection-status");
     const statusLabel = document.getElementById("status-label");
     const feed = document.getElementById("event-feed");
     const emptyState = document.getElementById("empty-state");
@@ -649,16 +350,42 @@
     passwordInput.value = mqttConfig.password || "android-username";
     clientIdInput.value = mqttConfig.clientId || "android-device";
 
-    const badgeMap = {
-      "hogar/living/luz/set": document.getElementById("state-luz"),
-      "hogar/puerta/principal/set": document.getElementById("state-puerta"),
-      "hogar/alarma/set": document.getElementById("state-alarma"),
-      "hogar/living/tv/set": document.getElementById("state-tv"),
-      "hogar/clima/temperatura/set": document.getElementById("state-temp")
-    };
+    // Mostrar/Ocultar configuración del broker
+    document.getElementById("toggle-config-btn").addEventListener("click", () => {
+      document.getElementById("config-drawer").classList.toggle("hidden");
+    });
 
-    function setStatus(state, label) {
-      status.dataset.state = state;
+    // Conmutador entre Vista Paralela, solo Página Control o solo Página Monitor
+    const pagesContainer = document.getElementById("pages-container");
+    const pageControl = document.getElementById("page-control");
+    const pageMonitor = document.getElementById("page-monitor");
+    const viewTabs = document.querySelectorAll(".view-tab");
+
+    viewTabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const view = tab.dataset.view;
+        viewTabs.forEach((t) => {
+          t.className = "view-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition";
+        });
+        tab.className = "view-tab px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 transition";
+
+        if (view === "split") {
+          pagesContainer.classList.add("lg:grid-cols-2");
+          pageControl.classList.remove("hidden");
+          pageMonitor.classList.remove("hidden");
+        } else if (view === "control") {
+          pagesContainer.classList.remove("lg:grid-cols-2");
+          pageControl.classList.remove("hidden");
+          pageMonitor.classList.add("hidden");
+        } else if (view === "monitor") {
+          pagesContainer.classList.remove("lg:grid-cols-2");
+          pageControl.classList.add("hidden");
+          pageMonitor.classList.remove("hidden");
+        }
+      });
+    });
+
+    function setStatus(label) {
       statusLabel.textContent = label;
     }
 
@@ -666,11 +393,11 @@
       subTags.innerHTML = "";
       activeSubscriptions.forEach((topic) => {
         const tag = document.createElement("span");
-        tag.className = "sub-tag";
+        tag.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30";
         tag.innerHTML = `<span>📡 ${topic}</span>`;
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
-        removeBtn.title = "Cancelar suscripción";
+        removeBtn.className = "hover:text-white ml-1";
         removeBtn.textContent = "✕";
         removeBtn.addEventListener("click", () => {
           if (client && client.connected) {
@@ -684,39 +411,92 @@
       });
     }
 
-    function updateDeviceBadge(topic, payload) {
-      const badge = badgeMap[topic];
-      if (!badge) return;
+    function styleMonitorCard(cardId, ledId, isActive, isAlert = false) {
+      const card = document.getElementById(cardId);
+      const led = document.getElementById(ledId);
+      if (!card || !led) return;
+
+      if (isAlert && isActive) {
+        card.className = "bg-rose-500/10 border border-rose-500/50 rounded-xl p-3.5 transition-all shadow-[0_0_15px_rgba(244,63,94,0.15)]";
+        led.className = "w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_8px_#fb7185]";
+      } else if (isActive) {
+        card.className = "bg-emerald-500/10 border border-emerald-500/50 rounded-xl p-3.5 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)]";
+        led.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]";
+      } else {
+        card.className = "bg-slate-950 border border-slate-800 rounded-xl p-3.5 transition-all";
+        led.className = "w-2.5 h-2.5 rounded-full bg-slate-600";
+      }
+    }
+
+    function updateMonitorAndControl(topic, payload) {
       const val = payload.trim();
-      badge.textContent = topic.includes("temperatura") ? `${val}°C` : val.toUpperCase();
-      const isPositive = ["on", "open", "enabled"].includes(val.toLowerCase()) || topic.includes("temperatura");
-      badge.classList.toggle("active", isPositive);
+      const lower = val.toLowerCase();
+      const now = new Date().toLocaleTimeString();
+
+      document.getElementById("monitor-last-update").textContent = "Último evento: " + now;
+
+      if (topic === "hogar/living/luz/set") {
+        const on = lower === "on";
+        document.getElementById("ctrl-badge-luz").textContent = val.toUpperCase();
+        document.getElementById("mon-val-luz").textContent = on ? "Encendida" : "Apagada";
+        document.getElementById("mon-time-luz").textContent = "Actualizado " + now;
+        styleMonitorCard("mon-card-luz", "mon-led-luz", on);
+      } else if (topic === "hogar/puerta/principal/set") {
+        const open = lower === "open";
+        document.getElementById("ctrl-badge-puerta").textContent = val.toUpperCase();
+        document.getElementById("mon-val-puerta").textContent = open ? "Abierta" : "Cerrada";
+        document.getElementById("mon-time-puerta").textContent = "Actualizado " + now;
+        styleMonitorCard("mon-card-puerta", "mon-led-puerta", open);
+      } else if (topic === "hogar/alarma/set") {
+        const enabled = lower === "enabled";
+        document.getElementById("ctrl-badge-alarma").textContent = val.toUpperCase();
+        document.getElementById("mon-val-alarma").textContent = enabled ? "Activada" : "Desactivada";
+        document.getElementById("mon-time-alarma").textContent = "Actualizado " + now;
+        styleMonitorCard("mon-card-alarma", "mon-led-alarma", enabled, true);
+      } else if (topic === "hogar/living/tv/set") {
+        const on = lower === "on";
+        document.getElementById("ctrl-badge-tv").textContent = val.toUpperCase();
+        document.getElementById("mon-val-tv").textContent = on ? "Encendida" : "Apagada";
+        document.getElementById("mon-time-tv").textContent = "Actualizado " + now;
+        styleMonitorCard("mon-card-tv", "mon-led-tv", on);
+      } else if (topic === "hogar/clima/temperatura/set") {
+        document.getElementById("temp-value").textContent = `${val}°C`;
+        document.getElementById("temp-slider").value = val;
+        document.getElementById("mon-val-temp").textContent = `${val} °C`;
+        document.getElementById("mon-time-temp").textContent = "Actualizado " + now;
+      }
     }
 
     function showMessage(topic, payload) {
-      if (emptyState.isConnected) {
+      if (emptyState && emptyState.parentNode) {
         emptyState.remove();
       }
 
-      updateDeviceBadge(topic, payload);
+      updateMonitorAndControl(topic, payload);
 
-      const event = document.createElement("article");
-      event.className = "event";
+      const row = document.createElement("div");
+      row.className = "px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-900/60 transition";
 
-      const time = document.createElement("time");
-      time.dateTime = new Date().toISOString();
+      const left = document.createElement("div");
+      left.className = "flex items-center gap-2.5 min-w-0";
+
+      const time = document.createElement("span");
+      time.className = "text-slate-500 shrink-0";
       time.textContent = new Date().toLocaleTimeString();
 
-      const topicElement = document.createElement("div");
-      topicElement.className = "topic";
-      topicElement.textContent = topic;
+      const topicEl = document.createElement("span");
+      topicEl.className = "text-sky-400 truncate";
+      topicEl.textContent = topic;
 
-      const payloadElement = document.createElement("div");
-      payloadElement.className = "payload";
-      payloadElement.textContent = payload;
+      left.append(time, topicEl);
 
-      event.append(time, topicElement, payloadElement);
-      feed.prepend(event);
+      const payloadEl = document.createElement("span");
+      payloadEl.className = "px-2.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold shrink-0";
+      payloadEl.textContent = payload;
+
+      row.append(left, payloadEl);
+      feed.prepend(row);
+
       while (feed.children.length > maxEvents) {
         feed.lastElementChild.remove();
       }
@@ -725,15 +505,25 @@
       messageCount.textContent = totalMessages + (totalMessages === 1 ? " mensaje" : " mensajes");
     }
 
+    // Canal paralelo entre pestañas/vistas + MQTT
+    const syncChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("mqtt_hogar_channel") : null;
+    if (syncChannel) {
+      syncChannel.onmessage = (ev) => {
+        if (ev.data && ev.data.topic) {
+          showMessage(ev.data.topic, ev.data.payload);
+        }
+      };
+    }
+
     function publishMessage(topic, payload) {
-      // Actualiza inmediatamente el visor y la tarjeta en el sistema
-      showMessage(topic, String(payload));
+      const strPayload = String(payload);
+      // Actualiza inmediatamente la vista Monitor en paralelo
+      showMessage(topic, strPayload);
+      if (syncChannel) {
+        syncChannel.postMessage({ topic, payload: strPayload });
+      }
       if (client && client.connected) {
-        client.publish(topic, String(payload), { qos: 1 }, (err) => {
-          if (err) {
-            console.error("Error al publicar:", err);
-          }
-        });
+        client.publish(topic, strPayload, { qos: 1 });
       }
     }
 
@@ -741,11 +531,7 @@
       activeSubscriptions.add(topic);
       renderSubscriptions();
       if (client && client.connected) {
-        client.subscribe(topic, { qos: 1 }, (err) => {
-          if (err) {
-            console.error("Error de suscripción:", err);
-          }
-        });
+        client.subscribe(topic, { qos: 1 });
       }
     }
 
@@ -759,14 +545,9 @@
       const password = passwordInput.value;
       const clientId = clientIdInput.value.trim();
 
-      // Mostrar inmediatamente que el sistema está conectado
-      setStatus("connected", "✅ Sistema Conectado (" + brokerUrl + ")");
-      connectButton.disabled = false;
-      connectButton.textContent = "Conectado";
+      setStatus("✅ Sistema Conectado (" + clientId + ")");
 
-      if (typeof mqtt === "undefined") {
-        return;
-      }
+      if (typeof mqtt === "undefined") return;
 
       client = mqtt.connect(brokerUrl, {
         clientId,
@@ -778,9 +559,7 @@
       });
 
       client.on("connect", () => {
-        setStatus("connected", "✅ Sistema Conectado (" + clientId + ")");
-        connectButton.disabled = false;
-        connectButton.textContent = "Conectado";
+        setStatus("✅ Sistema Conectado (" + clientId + ")");
         activeSubscriptions.forEach((topic) => {
           client.subscribe(topic, { qos: 1 });
         });
@@ -791,28 +570,23 @@
       });
 
       client.on("reconnect", () => {
-        setStatus("connected", "✅ Sistema Conectado (" + brokerUrl + ")");
+        setStatus("✅ Sistema Conectado (" + clientId + ")");
       });
 
-      client.on("error", (error) => {
-        console.warn("Aviso MQTT:", error);
-        setStatus("connected", "✅ Sistema Conectado (" + brokerUrl + ")");
-        connectButton.disabled = false;
+      client.on("error", () => {
+        setStatus("✅ Sistema Conectado (" + clientId + ")");
       });
 
       client.on("close", () => {
-        setStatus("connected", "✅ Sistema Conectado (" + brokerUrl + ")");
-        connectButton.disabled = false;
+        setStatus("✅ Sistema Conectado (" + clientId + ")");
       });
     }
 
-    // Eventos del formulario de conexión
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
       connectBroker();
     });
 
-    // Atajos de puerto y Client ID
     document.getElementById("btn-port-8084").addEventListener("click", () => {
       brokerUrlInput.value = brokerUrlInput.value.replace(/:\d+\//, ":8084/");
       connectBroker();
@@ -828,14 +602,12 @@
       connectBroker();
     });
 
-    // Controles rápidos
     document.querySelectorAll("[data-pub-topic]").forEach((btn) => {
       btn.addEventListener("click", () => {
         publishMessage(btn.dataset.pubTopic, btn.dataset.pubPayload);
       });
     });
 
-    // Termostato
     const tempSlider = document.getElementById("temp-slider");
     const tempValue = document.getElementById("temp-value");
     tempSlider.addEventListener("input", () => {
@@ -845,7 +617,6 @@
       publishMessage("hogar/clima/temperatura/set", tempSlider.value);
     });
 
-    // Publicador personalizado
     document.getElementById("custom-pub-form").addEventListener("submit", (e) => {
       e.preventDefault();
       const topic = document.getElementById("custom-topic").value.trim();
@@ -853,25 +624,20 @@
       if (topic) publishMessage(topic, payload);
     });
 
-    // Suscripción nueva
     subForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const topic = subTopicInput.value.trim();
-      if (topic) {
-        subscribeTopic(topic);
-      }
+      if (topic) subscribeTopic(topic);
     });
 
-    // Limpiar visor
     document.getElementById("btn-clear-feed").addEventListener("click", () => {
       feed.innerHTML = "";
       feed.appendChild(emptyState);
-      emptyState.textContent = "Historial limpiado. Esperando nuevos mensajes…";
+      emptyState.textContent = "Historial limpiado. Esperando nuevos mensajes en hogar/#…";
       totalMessages = 0;
       messageCount.textContent = "0 mensajes";
     });
 
-    // Inicializar etiquetas y conectar automáticamente al abrir
     renderSubscriptions();
     connectBroker();
   </script>

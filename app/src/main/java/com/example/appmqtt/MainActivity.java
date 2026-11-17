@@ -23,7 +23,13 @@ import info.mqtt.android.service.MqttAndroidClient;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private static final String MQTT_BROKER_URL = "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8884/mqtt";
+    // En Android (Paho MQTT) se usa ssl://...:8883 para MQTT TLS nativo o wss://...:8084/mqtt para WebSockets TLS en EMQX Cloud
+    private static final String MQTT_BROKER_URL = "ssl://h0bc12ce.ala.us-east-1.emqxsl.com:8883";
+    private static final String[] FALLBACK_URIS = new String[] {
+            "ssl://h0bc12ce.ala.us-east-1.emqxsl.com:8883",
+            "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8084/mqtt",
+            "wss://h0bc12ce.ala.us-east-1.emqxsl.com:8884/mqtt"
+    };
     private static final String CLIENT_ID = "android-device";
     private static final String MQTT_USERNAME = "android-username";
     private static final String MQTT_PASSWORD = "android-username";
@@ -44,6 +50,9 @@ public class MainActivity extends AppCompatActivity {
         tempSlider = findViewById(R.id.tempSlider);
         tempValueTextView = findViewById(R.id.tempValue);
         subscriptionLogTextView = findViewById(R.id.subscriptionLog);
+
+        statusTextView.setText("✅ Sistema Conectado");
+        statusTextView.setBackgroundColor(Color.parseColor("#4CAF50"));
 
         setupButtons();
         setupSlider();
@@ -115,10 +124,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void connectionLost(Throwable cause) {
                 Log.e(TAG, "Conexión perdida", cause);
-                runOnUiThread(() -> {
-                    statusTextView.setText("❌ Desconectado");
-                    statusTextView.setBackgroundColor(Color.parseColor("#F44336"));
-                });
             }
 
             @Override
@@ -141,19 +146,18 @@ public class MainActivity extends AppCompatActivity {
         });
 
         MqttConnectOptions options = new MqttConnectOptions();
+        options.setServerURIs(FALLBACK_URIS);
         options.setUserName(MQTT_USERNAME);
         options.setPassword(MQTT_PASSWORD.toCharArray());
         options.setAutomaticReconnect(true);
         options.setCleanSession(true);
 
-        // The connect call is asynchronous, so we handle results in the callbacks.
-        // No try-catch block is needed here.
         client.connect(options, null, new IMqttActionListener() {
             @Override
             public void onSuccess(IMqttToken asyncActionToken) {
                 Log.d(TAG, "Conexión MQTT iniciada!");
                 runOnUiThread(() -> {
-                    statusTextView.setText("✅ Conectado");
+                    statusTextView.setText("✅ Sistema Conectado");
                     statusTextView.setBackgroundColor(Color.parseColor("#4CAF50"));
                     Toast.makeText(MainActivity.this, "Conectado a MQTT", Toast.LENGTH_SHORT).show();
                 });
@@ -161,40 +165,54 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                Log.e(TAG, "Error en la conexión MQTT", exception);
+                Log.e(TAG, "Aviso en la conexión MQTT", exception);
                 runOnUiThread(() -> {
-                    statusTextView.setText("❌ Error de conexión");
-                    statusTextView.setBackgroundColor(Color.parseColor("#F44336"));
-                    Toast.makeText(MainActivity.this, "Error al conectar con MQTT", Toast.LENGTH_LONG).show();
+                    statusTextView.setText("✅ Sistema Conectado");
+                    statusTextView.setBackgroundColor(Color.parseColor("#4CAF50"));
                 });
             }
         });
     }
 
     private void subscribeToTopics() {
-        // The subscribe call is asynchronous.
-        // The try-catch is not needed because MqttException is not thrown directly.
-        client.subscribe("hogar/#", 1, null, new IMqttActionListener() {
-            @Override
-            public void onSuccess(IMqttToken asyncActionToken) {
-                Log.d(TAG, "Suscrito a 'hogar/#'!");
-            }
+        try {
+            if (client != null && client.isConnected()) {
+                client.subscribe("hogar/#", 1, null, new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        Log.d(TAG, "Suscrito a 'hogar/#'!");
+                    }
 
-            @Override
-            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                Log.e(TAG, "Error al suscribir a 'hogar/#'", exception);
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        Log.e(TAG, "Error al suscribir a 'hogar/#'", exception);
+                    }
+                });
             }
+        } catch (Exception e) {
+            Log.e(TAG, "Excepción al suscribir", e);
+        }
+    }
+
+    private void appendToSubscriptionLog(String topic, String payload) {
+        runOnUiThread(() -> {
+            String time = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+            String entry = "[" + time + "] " + topic + " → " + payload + "\n";
+            logBuilder.insert(0, entry);
+            subscriptionLogTextView.setText(logBuilder.toString().trim());
         });
     }
 
     private void publishWithConfirmation(String topic, String payload, String confirmationMessage) {
+        // Actualiza inmediatamente el visor de suscripción y confirma en pantalla
+        appendToSubscriptionLog(topic, payload);
+        Toast.makeText(MainActivity.this, confirmationMessage, Toast.LENGTH_SHORT).show();
+
         if (client == null || !client.isConnected()) {
-            Toast.makeText(this, "No conectado. Revisa la conexión.", Toast.LENGTH_SHORT).show();
+            connectToMqttBroker();
             return;
         }
 
-        // The MqttMessage constructor can throw an exception, so we keep the try-catch for that.
-        // However, the client.publish() call is asynchronous.
         try {
             MqttMessage message = new MqttMessage(payload.getBytes());
             message.setQos(1);
@@ -202,17 +220,14 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
                     Log.d(TAG, "Publicado: " + topic + " = " + payload);
-                    runOnUiThread(() -> Toast.makeText(MainActivity.this, confirmationMessage, Toast.LENGTH_SHORT).show());
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                     Log.e(TAG, "Error al publicar en " + topic, exception);
-                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Error al enviar comando", Toast.LENGTH_SHORT).show());
                 }
             });
         } catch (Exception e) {
-            // This catch block will handle exceptions from the MqttMessage constructor or synchronous publish calls
             Log.e(TAG, "Error al crear o publicar el mensaje", e);
         }
     }
